@@ -1,11 +1,14 @@
-#include <iostream>
-#include <string>
+#include "instructions.hpp"
+#include "parser.tab.hpp"
+
 #include <cstdio>
 #include <cstdlib>
+
+#include <iostream>
 #include <fstream>
-#include <vector>
+#include <string>
 #include <utility>
-#include "parser.tab.hpp"
+#include <vector>
 
 extern FILE* yyin;
 extern std::vector<instruction> program;
@@ -27,10 +30,13 @@ int main(int argc, char* argv[]) {
     if (yyparse() == 0) {
         std::cout << "Parsing successful" << std::endl;
 
-        std::ofstream outfile("output.txt");
+        std::ofstream outfile("output.mr");
         if (outfile.is_open()) {
-            for (const auto& [command, value] : program) {
-                outfile << command << " " << value << "\n";
+            for (const auto& [command, value] : program) { // TODO: maybe check if can be improved/cleaned-up
+                outfile << command << " ";
+                if (value.has_value()) 
+                    outfile << value.value();
+                outfile << "\n";
             }
         
             outfile.close();
