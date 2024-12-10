@@ -1,22 +1,29 @@
 %{
+    #include <vector>
+    #include <string>
+    #include <unordered_map>
+    #include <utility>
     #include <stdio.h>
 
     void yyerror(const char *s);
     int yylex();
     int yyparse();
+    int get_variable_address(const std::string& name);
 
     extern int yylineno;
 
-    struct ArrayInfo 
-    {
-        char* name;
-        long long start;  
-        long long end;
+    int memory_address_counter = 1;
+
+    struct instruction {
+        std::string opcode;
+        int operand;
     };
+
+    std::vector<instruction> program;
+    std::unordered_map<std::string, int> symbol_table;
 %}
 
-%union 
-{
+%union {
     long long   llval;              // For numbers
     char*       strval;             // For identifiers
     struct Array* arrval;    // For arrays
@@ -83,7 +90,14 @@ proc_call :
 ;
 
 declarations :
-    declarations ',' pidentifier
+    declarations ',' pidentifier {
+        if (symbol_table.count($3) == 0) {
+            symbol_table[$1] = memory_address_counter++;
+        } 
+        else {
+            yyerror("Variable redeclaration");
+        }
+    }
     | declarations ',' pidentifier '[' num ':' num ']'
     | pidentifier
     | pidentifier '[' num ':' num ']'
@@ -102,12 +116,20 @@ args :
 ;
 
 expression :
-    value
-    | value '+' value
-    | value '-' value
-    | value '*' value
-    | value '/' value
-    | value '%' value
+    value { 
+        program.emplace_back({"LOAD", $1});
+    }
+    | value '+' value {
+        program.emplace_back({"LOAD", $1});
+        program.emplace_back({"ADD", $3});
+    }
+    | value '-' value {
+        program.emplace_back({"LOAD", $1});
+        program.emplace_back({"SUB", $3});
+    }
+    | value '*' value { /*TODO: implement _multiply($1, $3); */}
+    | value '/' value { /*TODO: implement _divide($1, $3); */}
+    | value '%' value { /*TODO: implement _modulo($1, $3); */}
 ;
 
 condition :
@@ -120,19 +142,33 @@ condition :
 ;
 
 value :
-    num
-    | identifier 
+    num {
+        int temp_reg = memory_address_counter++;
+        program.emplace_back({"SET", $1});          // SET immediate value
+        program.emplace_back({"STORE", temp_reg});  // Store in temp memory
+        $$ = temp_reg;
+    }
+    | identifier
 ;
 
 identifier :    
-    pidentifier
+    pidentifier {
+        $$ = get_variable_address($1);
+    }
     | pidentifier '[' pidentifier ']'
     | pidentifier '[' num ']'
 ;
 
 %%
 
-void yyerror(const char* s) 
-{
+int get_variable_address(const std::string& name) {
+    if (symbol_table.count(name) == 0) {
+        yyerror(("Undefined variable: " + name).c_str());
+        exit(1);
+    }
+    return symbol_table[name];
+}
+
+void yyerror(const char* s) {
 	fprintf(stderr, "Parse error: %s\n", s);
 }
