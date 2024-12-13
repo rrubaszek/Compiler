@@ -6,35 +6,52 @@
 #include <unordered_map>
 #include <stack>
 
-    struct instruction {
-            std::string opcode;
-            std::optional<int> operand;
+enum symbol {
+    SCALAR,
+    ARRAY
+};
 
-            instruction(std::string opcode, std::optional<int> operand = std::nullopt) : 
-            opcode(std::move(opcode)),
-            operand(operand) 
-            {}
-    };
+struct symbol_entry {    
+    symbol type; 	
+	int address, a, b;
 
-    extern std::vector<instruction> program;
-	extern std::unordered_map<std::string, int> symbol_table;
-	extern std::stack<int> free_registers;
+	// symbol_entry(symbol type, int address, int a, int b) : 
+	// type(type),
+	// address(address),
+	// a(a),
+	// b(b)
+	// {}     
+};
 
-	int get_variable_address(const std::string& name);
-	int allocate_register();
-	void free_register(int reg);
+struct instruction {
+	std::string opcode;
+	std::optional<int> operand;
 
-    void _halt();
-    void _assign(const std::string& var);
-    void _read(const std::string& var);
-    void _write(int address);
-    void _declare(const std::string& name);
+	instruction(std::string opcode, std::optional<int> operand = std::nullopt) : 
+	opcode(std::move(opcode)),
+	operand(operand) 
+	{}
+};
 
-    int _load(int address);
-    int _add(int l_address, int r_address);
-    int _sub(int l_address, int r_address);
-    int _mul(int l_address, int r_address);
-    int _div(int l_address, int r_address);
-    int _div2(int address);
-    int _mod(int l_address, int r_address);
-    int _set(int value);
+extern std::vector<instruction> program;
+extern std::unordered_map<std::string, symbol_entry> symbol_table;
+extern std::stack<int> free_registers;
+
+int get_variable_address(const std::string& name);
+int allocate_register();
+void free_register(int reg);
+
+void _halt();
+void _assign(const std::string& var);
+void _read(const std::string& var);
+void _write(int address);
+void _declare(const std::string& name, symbol type, int a, int b);
+
+int _load(int address);
+int _add(int l_address, int r_address);
+int _sub(int l_address, int r_address);
+int _mul(int l_address, int r_address);
+int _div(int l_address, int r_address);
+int _div2(int address);
+int _mod(int l_address, int r_address);
+int _set(int value);

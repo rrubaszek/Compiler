@@ -1,17 +1,17 @@
 %{
-    #include "instructions.hpp"
+#include "instructions.hpp"
 
-    #include <stdio.h>
-    #include <math.h>
+#include <stdio.h>
+#include <math.h>
 
-    #include <iostream>
-    #include <string>
+#include <iostream>
+#include <string>
 
-    int yylex();
-    int yyparse();
-    void yyerror(const char *s);
+int yylex();
+int yyparse();
+void yyerror(const char *s);
 
-    extern int yylineno;
+extern int yylineno;
 %}
 
 %union {
@@ -92,13 +92,17 @@ proc_call :
 
 declarations :
     declarations ',' pidentifier {
-        _declare($3);
+        _declare($3, SCALAR, 0, 0);
     }
-    | declarations ',' pidentifier '[' num ':' num ']' { /*TODO: implement arrays*/ }
+    | declarations ',' pidentifier '[' num ':' num ']' { 
+        _declare($3, ARRAY, $5, $7);
+     }
     | pidentifier {
-        _declare($1);
+        _declare($1, SCALAR, 0, 0);
     }
-    | pidentifier '[' num ':' num ']' { /*TODO: implement arrays */ }
+    | pidentifier '[' num ':' num ']' { 
+        _declare($1, ARRAY, $3, $5);
+     }
 ;
 
 args_decl :
