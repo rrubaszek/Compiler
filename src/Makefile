@@ -16,13 +16,17 @@ BISON_CPP = parser.tab.cpp
 BISON_HEADER = parser.tab.hpp
 FLEX_CPP = lexer.yy.cpp
 
+SRC_FILES = instructions.cpp
+
+OBJ_FILES = $(SRC_FILES:.cpp=.o)
+
 # Output executable
 EXEC = compiler
 
 # Rules
 all: $(EXEC)
 
-$(EXEC): $(BISON_CPP) $(FLEX_CPP) $(MAIN_FILE)
+$(EXEC): $(BISON_CPP) $(FLEX_CPP) $(OBJ_FILES) $(MAIN_FILE)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 $(BISON_CPP) $(BISON_HEADER): $(BISON_FILE)
@@ -31,7 +35,10 @@ $(BISON_CPP) $(BISON_HEADER): $(BISON_FILE)
 $(FLEX_CPP): $(FLEX_FILE) $(BISON_HEADER)
 	$(FLEX) -o $(FLEX_CPP) $(FLEX_FILE)
 
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 clean:
-	rm -f $(BISON_CPP) $(BISON_HEADER) $(FLEX_CPP) $(EXEC)
+	rm -f $(BISON_CPP) $(BISON_HEADER) $(FLEX_CPP) $(OBJ_FILES) $(EXEC)
 
 .PHONY: all clean

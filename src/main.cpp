@@ -12,8 +12,6 @@
 #include <unordered_map>
 
 extern FILE* yyin;
-extern std::vector<instruction> program;
-extern std::unordered_map<int, long long> memory;
 extern int yyparse();
 
 int main(int argc, char* argv[]) {
@@ -50,11 +48,6 @@ int main(int argc, char* argv[]) {
     } 
     else {
         std::cerr << "Parsing failed" << std::endl;
-    }
-
-    std::cout << "MEMORY SUM UP\n";
-    for (auto const& [reg, value] : memory) {
-        std::cout << "register: " << reg << " value: " << value << "\n";
     }
 
     fclose(yyin);
