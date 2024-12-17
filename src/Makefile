@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic -O3
+CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic -O3 
 
 # Tools
 BISON = bison
@@ -30,7 +30,7 @@ $(EXEC): $(BISON_CPP) $(FLEX_CPP) $(OBJ_FILES) $(MAIN_FILE)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 $(BISON_CPP) $(BISON_HEADER): $(BISON_FILE)
-	$(BISON) -d -o $(BISON_CPP) $(BISON_FILE)
+	$(BISON) -d -Wcounterexamples -o $(BISON_CPP) $(BISON_FILE)
 
 $(FLEX_CPP): $(FLEX_FILE) $(BISON_HEADER)
 	$(FLEX) -o $(FLEX_CPP) $(FLEX_FILE)

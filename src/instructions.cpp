@@ -7,6 +7,7 @@ std::stack<int> free_registers;
 std::vector<instruction> program;
 
 static int next_free_register = 1;
+static int next_free_label = 50;
 
 void yyerror(const char *s);
 
@@ -14,9 +15,9 @@ void _halt() {
     program.emplace_back("HALT");
 }
 
-void _assign(const std::string& var) {
+void _assign(const std::string& var, int address) {
     program.emplace_back("STORE", get_variable_address(var));
-    free_register(get_variable_address(var));
+    free_register(address);
 }
 
 void _read(const std::string& var) {
@@ -40,6 +41,13 @@ void _declare(const std::string& name, symbol type, int a, int b) {
     }
 }
 
+void _eq(int a, int b) {
+    int start = program.size();
+    program.emplace_back("LOAD", a);
+    program.emplace_back("SUB", b);
+    program.emplace_back("JZERO", -3);
+}
+
 int _load(int address) {
     program.emplace_back("LOAD", address);
     return address;
@@ -48,14 +56,12 @@ int _load(int address) {
 int _add(int l_address, int r_address) {
     program.emplace_back("LOAD", l_address);
     program.emplace_back("ADD", r_address);
-    free_register(r_address);
     return l_address;
 }
 
 int _sub(int l_address, int r_address) {
     program.emplace_back("LOAD", l_address);
     program.emplace_back("SUB", r_address);
-    free_register(r_address);
     return l_address;
 }
 
@@ -76,10 +82,7 @@ int _mul(int l_address, int r_address) {
 
     program.emplace_back("LOAD", res_addr);
 
-    free_register(res_addr);
-    free_register(r_address);
-
-    return l_address;
+    return res_addr;
 }
 
 int _div(int numerator, int denominator) {
@@ -109,7 +112,6 @@ int _div(int numerator, int denominator) {
     program.emplace_back("LOAD", quotient_reg); 
 
     free_register(remainder_reg);
-    free_register(quotient_reg);
 
     return quotient_reg;
 }
@@ -117,6 +119,27 @@ int _div(int numerator, int denominator) {
 int _div2(int address) {
     program.emplace_back("HALF");
     return address;
+}
+
+int _mod(int l_address, int r_address) {
+    int res_addr = allocate_register();
+
+    program.emplace_back("LOAD", r_address);
+    program.emplace_back("JZERO", 10);
+
+    program.emplace_back("LOAD", l_address);
+    program.emplace_back("STORE", res_addr);
+
+    program.emplace_back("LOAD", res_addr);
+    program.emplace_back("SUB", r_address);
+    program.emplace_back("STORE", res_addr);
+
+    program.emplace_back("JNEG", 2);
+    program.emplace_back("JUMP", -4);
+
+    program.emplace_back("ADD", r_address);
+
+    return res_addr;
 }
 
 int _set(int value) {
@@ -141,6 +164,7 @@ int allocate_register() {
     //     std::cout << "register allocated " << reg << "\n";
     //     return reg;
     // }
+    std::cout << "allocated: " << next_free_register << "\n";
     return next_free_register++;
 }
 

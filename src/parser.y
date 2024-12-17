@@ -15,7 +15,7 @@ extern int yylineno;
 %}
 
 %union {
-    long long   llval;              // For numbers
+    int   llval;              // For numbers
     char*       strval;             // For identifiers
 }
 
@@ -29,7 +29,7 @@ extern int yylineno;
 %token <strval> pidentifier 
 %token <llval> num
 
-%type <llval> value expression
+%type <llval> value expression var_expression num_expression
 %type <strval> declarations identifier
 
 %left '-' '+'
@@ -64,10 +64,10 @@ commands :
 
 command :
     identifier ASSIGN expression ';' {
-        _assign($1);
-       
+        _assign($1, $3);
     }
-    | IF condition THEN commands ELSE commands ENDIF
+    | IF condition THEN commands ELSE commands ENDIF {
+    }
     | IF condition THEN commands ENDIF
     | WHILE condition DO commands ENDWHILE
     | REPEAT commands UNTIL condition ';'
@@ -117,11 +117,40 @@ args :
     | pidentifier
 ;
 
-expression :
+expression : 
+    var_expression
+    // num_expression
+    // | var_expression
+;
+
+// num_expression :
+//     // num {
+//     //     $$ = $1;
+//     // }
+//     // |
+//     // num '+' num {
+//     //     $$ = _set($1 + $3);
+//     // }
+//     // |
+//     // num '*' num {
+//     //     $$ = _set($1 * $3);
+//     // }
+//     // |
+//     // num '/' num {
+//     //     $$ = _set($1 / $3);
+//     // }
+//     // |
+//     // num '%' num {
+//     //     $$ = _set($1 % $3);
+//     // }
+// ;
+
+var_expression:
     value { 
         $$ = _load($1);
     }
-    | value '+' value {
+    |
+    value '+' value {
         $$ = _add($1, $3);
     }
     | value '-' value {
@@ -133,14 +162,18 @@ expression :
     | value '/' value { 
         $$ = _div($1, $3);
     }
-    | value '%' value { /*TODO: implement _modulo($1, $3); */}
+    | value '%' value { 
+        $$ = _mod($1, $3);
+    }
     | value HALF {
         $$ = _div2($1);
     }
 ;
 
 condition :
-    value EQ value
+    value EQ value {
+        _eq($1, $3);
+    }
     | value NEQ value
     | value GT value
     | value LE value

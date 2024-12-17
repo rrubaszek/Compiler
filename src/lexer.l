@@ -15,7 +15,7 @@
 [ \t\r\n]+              {}
 -?[0-9]+                { yylval.llval = atoll(yytext); return num; }
 [_a-z]+                 { yylval.strval = strdup(yytext); return pidentifier; }
-[+\-\*/^\()\[\]\;\:\,]    { return yytext[0]; }
+[+\-\*/^\()\[\]\;\:\,\%]    { return yytext[0]; }
 "/2"                    { return HALF; }
 ":="                    { return ASSIGN; }
 "="                     { return EQ; }

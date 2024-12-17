@@ -13,14 +13,9 @@ enum symbol {
 
 struct symbol_entry {    
     symbol type; 	
-	int address, a, b;
-
-	// symbol_entry(symbol type, int address, int a, int b) : 
-	// type(type),
-	// address(address),
-	// a(a),
-	// b(b)
-	// {}     
+	int address;
+	int a;
+	int b;    
 };
 
 struct instruction {
@@ -42,10 +37,12 @@ int allocate_register();
 void free_register(int reg);
 
 void _halt();
-void _assign(const std::string& var);
+void _assign(const std::string& var, int address);
 void _read(const std::string& var);
 void _write(int address);
 void _declare(const std::string& name, symbol type, int a, int b);
+
+void _eq(int a, int b);
 
 int _load(int address);
 int _add(int l_address, int r_address);
