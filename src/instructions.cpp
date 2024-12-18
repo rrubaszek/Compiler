@@ -15,18 +15,21 @@ void _halt() {
     program.emplace_back("HALT");
 }
 
-void _assign(const std::string& var, int address) {
+int _assign(const std::string& var, int address) {
     program.emplace_back("STORE", get_variable_address(var));
     free_register(address);
+    return program.size();
 }
 
-void _read(const std::string& var) {
+int _read(const std::string& var) {
     program.emplace_back("GET", get_variable_address(var));
+    return program.size();
 }
 
-void _write(int address) {
+int _write(int address) {
     program.emplace_back("PUT", address);
     free_register(address);
+    return program.size();
 }
 
 void _declare(const std::string& name, symbol type, int a, int b) {
@@ -41,11 +44,21 @@ void _declare(const std::string& name, symbol type, int a, int b) {
     }
 }
 
-void _eq(int a, int b) {
-    int start = program.size();
+int _cond_else(int cond_addr, int commands_addr, int else_addr) {
+    program[cond_addr].operand = commands_addr - cond_addr; 
+    
+
+    program[commands_addr].operand = else_addr - commands_addr;
+    std::cout << program[commands_addr].opcode << "\n";
+    return program.size();
+}
+
+int _eq(int a, int b) {
     program.emplace_back("LOAD", a);
     program.emplace_back("SUB", b);
-    program.emplace_back("JZERO", -3);
+    program.emplace_back("JZERO", -1); // Temporary placeholder
+
+    return program.size() - 1; // Return pointer to the program instruction with jump
 }
 
 int _load(int address) {

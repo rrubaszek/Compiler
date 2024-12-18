@@ -37,12 +37,14 @@ int allocate_register();
 void free_register(int reg);
 
 void _halt();
-void _assign(const std::string& var, int address);
-void _read(const std::string& var);
-void _write(int address);
+int _assign(const std::string& var, int address);
+int _read(const std::string& var);
+int _write(int address);
 void _declare(const std::string& name, symbol type, int a, int b);
 
-void _eq(int a, int b);
+int _cond_else(int cond_addr, int commands_addr, int else_addr);
+
+int _eq(int a, int b);
 
 int _load(int address);
 int _add(int l_address, int r_address);

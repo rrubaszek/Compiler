@@ -15,8 +15,9 @@ extern int yylineno;
 %}
 
 %union {
-    int   llval;              // For numbers
+    long long   llval;              // For numbers
     char*       strval;             // For identifiers
+    int         address;
 }
 
 %token PROGRAM PROCEDURE IS _BEGIN END
@@ -29,7 +30,7 @@ extern int yylineno;
 %token <strval> pidentifier 
 %token <llval> num
 
-%type <llval> value expression var_expression num_expression
+%type <address> value expression condition commands command
 %type <strval> declarations identifier
 
 %left '-' '+'
@@ -64,21 +65,24 @@ commands :
 
 command :
     identifier ASSIGN expression ';' {
-        _assign($1, $3);
+        $$ = _assign($1, $3);
     }
     | IF condition THEN commands ELSE commands ENDIF {
+        $$ = _cond_else($2, $4, $6);
     }
-    | IF condition THEN commands ENDIF
+    | IF condition THEN commands ENDIF {
+        // _cond($1, $3);
+    }
     | WHILE condition DO commands ENDWHILE
     | REPEAT commands UNTIL condition ';'
     | FOR pidentifier FROM value TO value DO commands ENDFOR
     | FOR pidentifier FROM value DOWNTO value DO commands ENDFOR
     | proc_call ';'
     | READ identifier ';' {
-        _read($2); // TODO: Check examples to see if it is a correct approach
+        $$ = _read($2); // TODO: Check examples to see if it is a correct approach
     }
     | WRITE value ';'{
-        _write($2);
+        $$ = _write($2);
     }
 ;
 
@@ -118,39 +122,10 @@ args :
 ;
 
 expression : 
-    var_expression
-    // num_expression
-    // | var_expression
-;
-
-// num_expression :
-//     // num {
-//     //     $$ = $1;
-//     // }
-//     // |
-//     // num '+' num {
-//     //     $$ = _set($1 + $3);
-//     // }
-//     // |
-//     // num '*' num {
-//     //     $$ = _set($1 * $3);
-//     // }
-//     // |
-//     // num '/' num {
-//     //     $$ = _set($1 / $3);
-//     // }
-//     // |
-//     // num '%' num {
-//     //     $$ = _set($1 % $3);
-//     // }
-// ;
-
-var_expression:
     value { 
         $$ = _load($1);
     }
-    |
-    value '+' value {
+    | value '+' value {
         $$ = _add($1, $3);
     }
     | value '-' value {
@@ -172,7 +147,7 @@ var_expression:
 
 condition :
     value EQ value {
-        _eq($1, $3);
+        $$ = _eq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value NEQ value
     | value GT value
