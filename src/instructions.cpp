@@ -7,7 +7,6 @@ std::stack<int> free_registers;
 std::vector<instruction> program;
 
 static int next_free_register = 1;
-static int next_free_label = 50;
 
 void yyerror(const char *s);
 
@@ -18,18 +17,17 @@ void _halt() {
 int _assign(const std::string& var, int address) {
     program.emplace_back("STORE", get_variable_address(var));
     free_register(address);
-    return program.size();
+    return program.size() - 1;
 }
 
 int _read(const std::string& var) {
     program.emplace_back("GET", get_variable_address(var));
-    return program.size();
+    return program.size() - 1;
 }
 
 int _write(int address) {
     program.emplace_back("PUT", address);
-    free_register(address);
-    return program.size();
+    return program.size() - 1;
 }
 
 void _declare(const std::string& name, symbol type, int a, int b) {
@@ -44,19 +42,64 @@ void _declare(const std::string& name, symbol type, int a, int b) {
     }
 }
 
-int _cond_else(int cond_addr, int commands_addr, int else_addr) {
-    program[cond_addr].operand = commands_addr - cond_addr; 
-    
+int _cond(int cond_addr, int commands_addr) {
+    program.insert(program.begin() + cond_addr + 1, { "JUMP", commands_addr - cond_addr + 1 });
+    return program.size() - 1;
+}
 
-    program[commands_addr].operand = else_addr - commands_addr;
-    std::cout << program[commands_addr].opcode << "\n";
-    return program.size();
+int _cond_else(int cond_addr, int commands_addr, int else_addr) {
+    program.insert(program.begin() + cond_addr + 1, { "JUMP", commands_addr - cond_addr + 2 });
+    program.insert(program.begin() + commands_addr + 2, { "JUMP", else_addr - commands_addr + 1 });
+    return program.size() - 1;
 }
 
 int _eq(int a, int b) {
     program.emplace_back("LOAD", a);
     program.emplace_back("SUB", b);
-    program.emplace_back("JZERO", -1); // Temporary placeholder
+    program.emplace_back("JZERO", 2);
+
+    return program.size() - 1; // Return pointer to the program instruction with jump
+}
+
+int _neq(int a, int b) {
+    program.emplace_back("LOAD", a);
+    program.emplace_back("SUB", b);
+    program.emplace_back("JZERO", 2); 
+    program.emplace_back("JUMP", 2);
+
+    return program.size() - 1; // Return pointer to the program instruction with jump
+}
+
+int _gt(int a, int b) {
+    program.emplace_back("LOAD", a);
+    program.emplace_back("SUB", b);
+    program.emplace_back("JPOS", 2); 
+
+    return program.size() - 1; // Return pointer to the program instruction with jump
+}
+
+int _le(int a, int b) {
+    program.emplace_back("LOAD", a);
+    program.emplace_back("SUB", b);
+    program.emplace_back("JNEG", 2); 
+
+    return program.size() - 1; // Return pointer to the program instruction with jump
+}
+
+int _geq(int a, int b) {
+    program.emplace_back("LOAD", a);
+    program.emplace_back("SUB", b);
+    program.emplace_back("JPOS", 3); 
+    program.emplace_back("JZERO", 2);
+
+    return program.size() - 1; // Return pointer to the program instruction with jump
+}
+
+int _leq(int a, int b) {
+    program.emplace_back("LOAD", a);
+    program.emplace_back("SUB", b);
+    program.emplace_back("JNEG", 3); 
+    program.emplace_back("JZERO", 2);
 
     return program.size() - 1; // Return pointer to the program instruction with jump
 }
@@ -184,5 +227,6 @@ int allocate_register() {
 void free_register(int reg) {
     std::cout << "free register " << reg << "\n";
     //free_registers.push(reg);
-    next_free_register--;
+    if (next_free_register > 0)
+        next_free_register--;
 }

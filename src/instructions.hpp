@@ -42,9 +42,15 @@ int _read(const std::string& var);
 int _write(int address);
 void _declare(const std::string& name, symbol type, int a, int b);
 
+int _cond(int cond_addr, int commands_addr);
 int _cond_else(int cond_addr, int commands_addr, int else_addr);
 
 int _eq(int a, int b);
+int _neq(int a, int b);
+int _gt(int a, int b);
+int _le(int a, int b);
+int _geq(int a, int b);
+int _leq(int a, int b);
 
 int _load(int address);
 int _add(int l_address, int r_address);

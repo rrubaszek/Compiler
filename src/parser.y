@@ -59,8 +59,12 @@ main :
 ;
 
 commands : 
-    commands command
-    | command 
+    commands command {
+        $$ = $2;
+    }
+    | command {
+        $$ = $1;
+    }
 ;
 
 command :
@@ -71,7 +75,7 @@ command :
         $$ = _cond_else($2, $4, $6);
     }
     | IF condition THEN commands ENDIF {
-        // _cond($1, $3);
+        $$ = _cond($2, $4);
     }
     | WHILE condition DO commands ENDWHILE
     | REPEAT commands UNTIL condition ';'
@@ -79,7 +83,7 @@ command :
     | FOR pidentifier FROM value DOWNTO value DO commands ENDFOR
     | proc_call ';'
     | READ identifier ';' {
-        $$ = _read($2); // TODO: Check examples to see if it is a correct approach
+        $$ = _read($2);
     }
     | WRITE value ';'{
         $$ = _write($2);
@@ -149,11 +153,21 @@ condition :
     value EQ value {
         $$ = _eq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
-    | value NEQ value
-    | value GT value
-    | value LE value
-    | value GEQ value
-    | value LEQ value
+    | value NEQ value {
+        $$ = _neq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+    }
+    | value GT value { 
+        $$ = _gt($1, $3); // Return pointer to the instruction with { JUMP -1 }
+    }
+    | value LE value {
+        $$ = _le($1, $3); // Return pointer to the instruction with { JUMP -1 }
+    }
+    | value GEQ value {
+        $$ = _geq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+    }
+    | value LEQ value {
+        $$ = _leq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+    }
 ;
 
 value :

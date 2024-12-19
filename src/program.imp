@@ -1,0 +1,14 @@
+PROGRAM IS
+a, b
+BEGIN
+b := 5;
+a := 5;
+IF a = b THEN
+    WRITE a;
+    IF a = b THEN
+        WRITE 0;
+    ELSE
+        WRITE 1;
+    ENDIF
+ENDIF
+END
