@@ -72,15 +72,23 @@ command :
         $$ = _assign($1, $3);
     }
     | IF condition THEN commands ELSE commands ENDIF {
-        $$ = _cond_else($2, $4, $6);
+        $$ = _if_else_stmt($2, $4, $6);
     }
     | IF condition THEN commands ENDIF {
-        $$ = _cond($2, $4);
+        $$ = _if_stmt($2, $4);
     }
-    | WHILE condition DO commands ENDWHILE
-    | REPEAT commands UNTIL condition ';'
-    | FOR pidentifier FROM value TO value DO commands ENDFOR
-    | FOR pidentifier FROM value DOWNTO value DO commands ENDFOR
+    | WHILE condition DO commands ENDWHILE {
+        $$ = _while_stmt($2, $4);
+    }
+    | REPEAT commands UNTIL condition ';' {
+        $$ = _repeat_stmt($2, $4);
+    }
+    | FOR pidentifier FROM value TO value DO commands ENDFOR {
+        $$ = _for_stmt($2, $4, $6, $8);
+    }
+    | FOR pidentifier FROM value DOWNTO value DO commands ENDFOR {
+        $$ = _for_dec_stmt($2, $4, $6, $8);
+    }
     | proc_call ';'
     | READ identifier ';' {
         $$ = _read($2);

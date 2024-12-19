@@ -42,15 +42,33 @@ void _declare(const std::string& name, symbol type, int a, int b) {
     }
 }
 
-int _cond(int cond_addr, int commands_addr) {
+int _if_stmt(int cond_addr, int commands_addr) {
     program.insert(program.begin() + cond_addr + 1, { "JUMP", commands_addr - cond_addr + 1 });
     return program.size() - 1;
 }
 
-int _cond_else(int cond_addr, int commands_addr, int else_addr) {
+int _if_else_stmt(int cond_addr, int commands_addr, int else_addr) {
     program.insert(program.begin() + cond_addr + 1, { "JUMP", commands_addr - cond_addr + 2 });
     program.insert(program.begin() + commands_addr + 2, { "JUMP", else_addr - commands_addr + 1 });
     return program.size() - 1;
+}
+
+int _while_stmt(int cond_addr, int commands_addr) {
+    program.insert(program.begin() + cond_addr + 1, { "JUMP", commands_addr - cond_addr + 2 });
+    program.insert(program.begin() + commands_addr + 2, { "JUMP", cond_addr - commands_addr - 4 });
+    return program.size() - 1;
+}
+
+int _repeat_stmt(int cond_addr, int commands_addr) {
+
+}
+
+int _for_stmt(const std::string& var, int start, int end, int commands_addr) {
+
+}
+
+int _for_dec_stmt(const std::string& var, int start, int end, int commands_addr) {
+
 }
 
 int _eq(int a, int b) {
@@ -173,6 +191,7 @@ int _div(int numerator, int denominator) {
 }
 
 int _div2(int address) {
+    program.emplace_back("LOAD", address); 
     program.emplace_back("HALF");
     return address;
 }
