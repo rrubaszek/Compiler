@@ -45,7 +45,7 @@ void _declare(const std::string& name, symbol type, int a, int b);
 int _if_stmt(int cond_addr, int commands_addr);
 int _if_else_stmt(int cond_addr, int commands_addr, int else_addr);
 int _while_stmt(int cond_addr, int commands_addr);
-int _repeat_stmt(int cond_addr, int commands_addr);
+int _repeat_stmt(int commands_addr, int cond_addr);
 int _for_stmt(const std::string& var, int start, int end, int commands_addr);
 int _for_dec_stmt(const std::string& var, int start, int end, int commands_addr);
 

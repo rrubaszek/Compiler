@@ -59,8 +59,12 @@ int _while_stmt(int cond_addr, int commands_addr) {
     return program.size() - 1;
 }
 
-int _repeat_stmt(int cond_addr, int commands_addr) {
-
+int _repeat_stmt(int commands_addr, int cond_addr) {
+    int start = program.size();
+    std::cout << commands_addr << "\n";
+    std::cout << cond_addr << "\n";
+    program.insert(program.begin() + cond_addr + 1, { "JUMP", -cond_addr });
+    return program.size() - 1;
 }
 
 int _for_stmt(const std::string& var, int start, int end, int commands_addr) {
@@ -144,6 +148,12 @@ int _mul(int l_address, int r_address) {
 
     program.emplace_back("SET", 0);
     program.emplace_back("STORE", res_addr);
+
+    program.emplace_back("LOAD", r_address);
+    program.emplace_back("JZERO", 10);
+
+    program.emplace_back("LOAD", l_address);
+    program.emplace_back("JZERO", 8);
 
     program.emplace_back("LOAD", res_addr);
     program.emplace_back("ADD", l_address);
@@ -246,6 +256,6 @@ int allocate_register() {
 void free_register(int reg) {
     std::cout << "free register " << reg << "\n";
     //free_registers.push(reg);
-    if (next_free_register > 0)
-        next_free_register--;
+    // if (next_free_register > 0)
+    //     next_free_register--;
 }

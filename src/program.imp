@@ -1,18 +1,16 @@
 # Binarna postać liczby 
 PROGRAM IS
-	a,b
+	n, p
 BEGIN
-    READ a;
-    READ b;
-    IF a < b THEN  
-        WHILE a > 0 DO
-            WRITE a;
-            a := a - 1;
-        ENDWHILE
-    ELSE 
-        WHILE b > 0 DO
-            WRITE b;
-            b := b - 1;
-        ENDWHILE
-    ENDIF
+    READ n;
+    REPEAT
+	p:=n/2;
+	p:=2*p;
+	IF n>p THEN 
+	    WRITE 1;
+	ELSE 
+	    WRITE 0;
+	ENDIF
+	n:=n/2;
+    UNTIL n=0;
 END
