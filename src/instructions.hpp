@@ -28,19 +28,44 @@ struct instruction {
 	{}
 };
 
+struct argument {
+    std::string name;  // Argument name
+    symbol type;  // Argument type (optional, e.g., "int", "float", "")
+
+	argument(std::string name, symbol type) :
+	name(std::move(name)),
+	type(type)
+	{}
+};
+
+struct procedure {
+    std::string name;
+    int start_address;    // Address of the procedure's first instruction
+};
+
+
 extern std::vector<instruction> program;
-extern std::unordered_map<std::string, symbol_entry> symbol_table;
+extern std::unordered_map<std::string, symbol_entry> global_symbol_table;
+extern std::unordered_map<std::string, symbol_entry> local_symbol_table;
+extern std::unordered_map<std::string, procedure> procedure_table;
+extern std::vector<argument> proc_symbol_table;
 extern std::stack<int> free_registers;
 
 int get_variable_address(const std::string& name);
 int allocate_register();
 void free_register(int reg);
 
-void _halt();
+void _put_halt();
 int _assign(const std::string& var, int address);
 int _read(const std::string& var);
 int _write(int address);
+
+void _put_rtrn();
+void _procedure_head(const std::string& name);
 void _declare(const std::string& name, symbol type, int a, int b);
+void _declare_local(const std::string& name, symbol type, int a, int b);
+void _declare_arguments(const std::string& name, symbol type);
+void _call_procedure();
 
 int _if_stmt(int cond_addr, int commands_addr);
 int _if_else_stmt(int cond_addr, int commands_addr, int else_addr);

@@ -2,16 +2,24 @@
 
 #include <iostream>
 
-std::unordered_map<std::string, symbol_entry> symbol_table;
+std::unordered_map<std::string, symbol_entry> global_symbol_table;
+std::unordered_map<std::string, symbol_entry> local_symbol_table;
+std::vector<argument> proc_symbol_table;
+std::unordered_map<std::string, procedure> procedure_table;
 std::stack<int> free_registers;
 std::vector<instruction> program;
 
 static int next_free_register = 1;
+bool local = false;
 
 void yyerror(const char *s);
 
-void _halt() {
+void _put_halt() {
     program.emplace_back("HALT");
+}
+
+void _put_rtrn() {
+    program.emplace_back("RTRN", 1);
 }
 
 int _assign(const std::string& var, int address) {
@@ -30,16 +38,57 @@ int _write(int address) {
     return program.size() - 1;
 }
 
+void _procedure_head(const std::string& name) {
+    procedure proc;
+    proc.name = name;
+    proc.start_address = program.size(); // Address placeholder
+    procedure_table[name] = proc;
+    std::cout << procedure_table[name].name << "\n";
+
+    for (int i = 0; i < proc_symbol_table.size(); ++i) {
+        global_symbol_table[proc_symbol_table[i].name] = {proc_symbol_table[i].type, 0, 0, 0}; // Example: map name to location
+    }
+
+    proc_symbol_table.clear();
+}
+
 void _declare(const std::string& name, symbol type, int a, int b) {
-    if (symbol_table.count(name) == 0) {
-        int var_register = allocate_register();
-        symbol_entry entry = { type, var_register, a, b };  
-        symbol_table[name] = entry;
-        std::cout << "Dodano do pamięci zmienną: " << name << "\n";
-    }
+    if(!local) {
+        if (global_symbol_table.count(name) == 0) {
+            int var_register = allocate_register();
+            symbol_entry entry = { type, var_register, a, b };  
+            global_symbol_table[name] = entry;
+            std::cout << "Dodano do pamięci zmienną: " << name << "\n";
+        }
+        else {
+            yyerror("Variable redeclaration");
+        }
+    } 
     else {
-        yyerror("Variable redeclaration");
+        if (local_symbol_table.count(name) == 0) {
+            int var_register = allocate_register();
+            symbol_entry entry = { type, var_register, a, b };  
+            local_symbol_table[name] = entry;
+            std::cout << "Dodano do pamięci zmienną lokalna: " << name << "\n";
+        }
+        else {
+            yyerror("Variable redeclaration");
+        }
     }
+}
+
+void _declare_arguments(const std::string& name, symbol type) {
+    proc_symbol_table.emplace_back(name, type);
+}
+
+void _call_procedure(const std::string& name) {
+    if (procedure_table.find(name) == procedure_table.end()) {
+        yyerror("Undefined procedure\n");
+    }
+
+    // Generate JUMP to procedure
+    int proc_address = procedure_table[name].start_address;
+    program.emplace_back("CALL", proc_address); // Jump to procedure
 }
 
 int _if_stmt(int cond_addr, int commands_addr) {
@@ -235,11 +284,16 @@ int _set(int value) {
 }
 
 int get_variable_address(const std::string& name) {
-    if (symbol_table.count(name) == 0) {
+    if (local && local_symbol_table.find(name) != local_symbol_table.end()) {
+        return local_symbol_table[name].address;
+    } 
+    else if (global_symbol_table.find(name) != global_symbol_table.end()) {
+        return global_symbol_table[name].address;
+    } 
+    else {
         yyerror(("Undefined variable: " + name).c_str());
         exit(1);
     }
-    return symbol_table[name].address;
 }
 
 int allocate_register() {

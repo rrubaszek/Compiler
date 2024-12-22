@@ -12,6 +12,7 @@ int yyparse();
 void yyerror(const char *s);
 
 extern int yylineno;
+extern bool local;
 %}
 
 %union {
@@ -43,19 +44,31 @@ extern int yylineno;
 
 program_all : 
     procedures main {
-        _halt();
+        _put_halt();
     }
 ;
 
 procedures :   
-    procedures PROCEDURE proc_head IS declarations _BEGIN commands END
-    | procedures PROCEDURE proc_head IS _BEGIN commands END
+    procedures PROCEDURE proc_head IS declarations _BEGIN commands END {
+        std::cout << "procedure\n";
+        local = true;
+        _put_rtrn();
+    }
+    | procedures PROCEDURE proc_head IS _BEGIN commands END {
+        local = true;
+        _put_rtrn();
+    }
     | /* empty */
 ;
 
 main : 
-    PROGRAM IS declarations _BEGIN commands END
-    | PROGRAM IS _BEGIN commands END 
+    PROGRAM IS declarations _BEGIN commands END {
+        std::cout << "main\n";
+        local = false;
+    }
+    | PROGRAM IS _BEGIN commands END {
+        local = false;
+    }
 ;
 
 commands : 
@@ -99,11 +112,15 @@ command :
 ;
 
 proc_head :
-    pidentifier '(' args_decl ')'
+    pidentifier '(' args_decl ')' {
+        _procedure_head($1);
+    }
 ;
 
 proc_call :
-    pidentifier '(' args ')'
+    pidentifier '(' args ')' {
+
+    }
 ;
 
 declarations :
@@ -112,20 +129,28 @@ declarations :
     }
     | declarations ',' pidentifier '[' num ':' num ']' { 
         _declare($3, ARRAY, $5, $7);
-     }
+    }
     | pidentifier {
         _declare($1, SCALAR, 0, 0);
     }
     | pidentifier '[' num ':' num ']' { 
         _declare($1, ARRAY, $3, $5);
-     }
+    }
 ;
 
 args_decl :
-    args_decl ',' pidentifier
-    | args_decl ',' T pidentifier
-    | pidentifier
-    | T pidentifier
+    args_decl ',' pidentifier {
+        _declare_arguments($3, SCALAR);
+    }
+    | args_decl ',' T pidentifier {
+        _declare_arguments($4, ARRAY);
+    }
+    | pidentifier {
+        _declare_arguments($1, SCALAR);
+    }
+    | T pidentifier {
+        _declare_arguments($2, ARRAY);
+    }
 ;
 
 args :
