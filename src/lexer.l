@@ -3,17 +3,20 @@
 %option nounput
 
 %{
+#include "instructions.hpp"
 #include "parser.tab.hpp"
 
 #include <string.h>
 #include <stdlib.h>
+
+#include <iostream>
 %}
 
 %%
 
 \#.*\n                  {}
 [ \t\r\n]+              {}
--?[0-9]+                { yylval.llval = atoll(yytext); return num; }
+[0-9]+                  { yylval.llval = atoll(yytext); return num; }
 [_a-z]+                 { yylval.strval = strdup(yytext); return pidentifier; }
 [+\-\*/^\()\[\]\;\:\,\%]    { return yytext[0]; }
 "/2"                    { return HALF; }

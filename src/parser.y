@@ -1,5 +1,6 @@
 %{
 #include "instructions.hpp"
+#include "parser.tab.hpp"
 
 #include <stdio.h>
 #include <math.h>
@@ -11,6 +12,7 @@ int yylex();
 int yyparse();
 void yyerror(const char *s);
 
+
 extern int yylineno;
 extern bool local;
 %}
@@ -19,6 +21,7 @@ extern bool local;
     long long   llval;              // For numbers
     char*       strval;             // For identifiers
     int         address;
+    Entity      *_entity;
 }
 
 %token PROGRAM PROCEDURE IS _BEGIN END
@@ -31,8 +34,9 @@ extern bool local;
 %token <strval> pidentifier 
 %token <llval> num
 
-%type <address> value expression condition commands command
+%type <address> commands command condition
 %type <strval> declarations identifier
+%type <_entity> value expression 
 
 %left '-' '+'
 %left '*' '/'
@@ -85,29 +89,29 @@ command :
         $$ = _assign($1, $3);
     }
     | IF condition THEN commands ELSE commands ENDIF {
-        $$ = _if_else_stmt($2, $4, $6);
+        //$$ = _if_else_stmt($2, $4, $6);
     }
     | IF condition THEN commands ENDIF {
-        $$ = _if_stmt($2, $4);
+        //$$ = _if_stmt($2, $4);
     }
     | WHILE condition DO commands ENDWHILE {
-        $$ = _while_stmt($2, $4);
+        //$$ = _while_stmt($2, $4);
     }
     | REPEAT commands UNTIL condition ';' {
-        $$ = _repeat_stmt($2, $4);
+        //$$ = _repeat_stmt($2, $4);
     }
     | FOR pidentifier FROM value TO value DO commands ENDFOR {
-        $$ = _for_stmt($2, $4, $6, $8);
+        //$$ = _for_stmt($2, $4, $6, $8);
     }
     | FOR pidentifier FROM value DOWNTO value DO commands ENDFOR {
-        $$ = _for_dec_stmt($2, $4, $6, $8);
+        //$$ = _for_dec_stmt($2, $4, $6, $8);
     }
     | proc_call ';'
     | READ identifier ';' {
         $$ = _read($2);
     }
     | WRITE value ';'{
-        $$ = _write($2);
+        $$ = _write($2->address);
     }
 ;
 
@@ -160,7 +164,8 @@ args :
 
 expression : 
     value { 
-        $$ = _load($1);
+        //$$ = _load($1);
+        $$ = $1;
     }
     | value '+' value {
         $$ = _add($1, $3);
@@ -172,43 +177,48 @@ expression :
         $$ = _mul($1, $3);
     }
     | value '/' value { 
-        $$ = _div($1, $3);
+        //$$ = _div($1, $3);
     }
     | value '%' value { 
-        $$ = _mod($1, $3);
+        //$$ = _mod($1, $3);
     }
     | value HALF {
-        $$ = _div2($1);
+        //$$ = _div2($1);
     }
 ;
 
 condition :
     value EQ value {
-        $$ = _eq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _eq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value NEQ value {
-        $$ = _neq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _neq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value GT value { 
-        $$ = _gt($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _gt($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value LE value {
-        $$ = _le($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _le($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value GEQ value {
-        $$ = _geq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _geq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value LEQ value {
-        $$ = _leq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _leq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
 ;
 
 value :
     num {
-        $$ = _set($1);
+        std::cout << $1 << "\n";
+        $$ = new Entity($1, -1, "");
+    }
+    | '-' num {
+        std::cout << -$2 << "\n";
+        $$ = new Entity(-$2, -1, "");
     }
     | identifier {
-        $$ = get_variable_address($1);
+        $$ = new Entity(-1, get_variable_address($1), $1);
     }
 ;
 

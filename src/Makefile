@@ -26,7 +26,7 @@ EXEC = compiler
 # Rules
 all: $(EXEC)
 
-$(EXEC): $(BISON_CPP) $(FLEX_CPP) $(OBJ_FILES) $(MAIN_FILE)
+$(EXEC): $(OBJ_FILES) $(BISON_CPP) $(FLEX_CPP) $(MAIN_FILE)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 $(BISON_CPP) $(BISON_HEADER): $(BISON_FILE)
