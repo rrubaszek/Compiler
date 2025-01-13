@@ -30,7 +30,7 @@ extern bool local;
 %token REPEAT UNTIL
 %token FOR FROM TO DOWNTO ENDFOR
 %token READ WRITE
-%token T ASSIGN EQ LE GT GEQ LEQ NEQ HALF
+%token T ASSIGN EQ LE GT GEQ LEQ NEQ
 %token <strval> pidentifier 
 %token <llval> num
 
@@ -164,7 +164,6 @@ args :
 
 expression : 
     value { 
-        //$$ = _load($1);
         $$ = $1;
     }
     | value '+' value {
@@ -177,13 +176,10 @@ expression :
         $$ = _mul($1, $3);
     }
     | value '/' value { 
-        //$$ = _div($1, $3);
+        $$ = _div($1, $3);
     }
     | value '%' value { 
-        //$$ = _mod($1, $3);
-    }
-    | value HALF {
-        //$$ = _div2($1);
+        $$ = _mod($1, $3);
     }
 ;
 
@@ -210,11 +206,9 @@ condition :
 
 value :
     num {
-        std::cout << $1 << "\n";
         $$ = new Entity($1, -1, "");
     }
     | '-' num {
-        std::cout << -$2 << "\n";
         $$ = new Entity(-$2, -1, "");
     }
     | identifier {

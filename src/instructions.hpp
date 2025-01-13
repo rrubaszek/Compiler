@@ -57,10 +57,6 @@ struct Procedure {
 
 extern std::vector<instruction> program;
 extern std::unordered_map<std::string, symbol_entry> global_symbol_table;
-extern std::unordered_map<std::string, symbol_entry> local_symbol_table;
-extern std::unordered_map<std::string, Procedure> procedure_table;
-extern std::vector<argument> proc_symbol_table;
-extern std::stack<int> free_registers;
 
 int get_variable_address(const std::string& name);
 int allocate_register();
@@ -92,11 +88,8 @@ int _le(int a, int b);
 int _geq(int a, int b);
 int _leq(int a, int b);
 
-int _load(Entity* _entity);
 Entity* _add(Entity* _entity_l, Entity* _entity_r);
 Entity* _sub(Entity* _entity_l, Entity* _entity_r);
 Entity* _mul(Entity* _entity_l, Entity* _entity_r);
 Entity* _div(Entity* _entity_l, Entity* _entity_r);
-Entity* _div2(Entity* _entity);
 Entity* _mod(Entity* _entity_l, Entity* _entity_r);
-int _set(int value);
