@@ -57,7 +57,7 @@ void _declare(const std::string& name, symbol type, int a, int b) {
     if(!local) {
         if (global_symbol_table.count(name) == 0) {
             int var_register = allocate_register();
-            symbol_entry entry = { type, var_register, a, b };  
+            symbol_entry entry = { type, var_register, 0, a, b };  // basic value is 0
             global_symbol_table[name] = entry;
             std::cout << "Dodano do pamięci zmienną: " << name << "\n";
         }
@@ -222,26 +222,42 @@ Entity* _sub(Entity* _entity_l, Entity* _entity_r) {
 }
 
 Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
-    int a = _entity_l->value;;
-    int b = _entity_r->value;;
+    int a = _entity_l->value;
+    int b = _entity_r->value;
     int a_addr = _entity_l->address;
     int b_addr = _entity_r->address;
+
+    // Obsługa przypadku, gdy obie liczby są stałymi
     if (_entity_l->address == -1 && _entity_r->address == -1) {
-        return new Entity(_entity_l->value * _entity_r->value, -1, "");
+        return new Entity(a * b, -1, "");
     }
-    else if (_entity_l->address == -1 && _entity_r->address != -1) {
-        program.emplace_back("SET", _entity_l->value);
-        a = _entity_l->value;
+
+    // Przygotowanie liczb i adresów
+    if (_entity_l->address == -1 && _entity_r->address != -1) {
+        program.emplace_back("SET", a);
         a_addr = allocate_register();
         program.emplace_back("STORE", a_addr);
-    }
-    else if (_entity_r->address == -1 && _entity_l->address != -1) {
-        program.emplace_back("SET", _entity_r->value);
-        b = _entity_r->value;
+    } else if (_entity_r->address == -1 && _entity_l->address != -1) {
+        program.emplace_back("SET", b);
         b_addr = allocate_register();
         program.emplace_back("STORE", b_addr);
     }
 
+    // Obsługa znaków: sprawdzanie i ustawianie wartości bezwzględnych
+    bool is_negative_result = (a < 0) ^ (b < 0); // Wynik ujemny, jeśli tylko jedna liczba jest ujemna
+
+    if (a < 0) {
+        program.emplace_back("SET", 0);         // Zanegowanie a_addr
+        program.emplace_back("SUB", a_addr);
+        program.emplace_back("STORE", a_addr);
+    }
+    if (b < 0) {
+        program.emplace_back("SET", 0);         // Zanegowanie b_addr
+        program.emplace_back("SUB", b_addr);
+        program.emplace_back("STORE", b_addr);
+    }
+
+    // Algorytm iteracyjnego dodawania
     if (a > b) {
         std::swap(a, b);
         std::swap(a_addr, b_addr);
@@ -253,10 +269,10 @@ Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("STORE", res_addr);
 
     program.emplace_back("LOAD", b_addr);
-    program.emplace_back("JZERO", 10);
+    program.emplace_back("JZERO", 10); // Wyjście, jeśli b_addr == 0
 
     program.emplace_back("LOAD", a_addr);
-    program.emplace_back("JZERO", 8);
+    program.emplace_back("JZERO", 8); // Wyjście, jeśli a_addr == 0
 
     program.emplace_back("LOAD", res_addr);
     program.emplace_back("ADD", a_addr);
@@ -265,36 +281,60 @@ Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("SET", -1); 
     program.emplace_back("ADD", b_addr);
     program.emplace_back("STORE", b_addr);
-    program.emplace_back("JPOS", -6);
+    program.emplace_back("JPOS", -6); // Kontynuuj, jeśli b_addr > 0
 
+    // Zapisanie wyniku
     program.emplace_back("LOAD", res_addr);
 
-    free_register(a_addr);
+    // Jeśli wynik jest ujemny, zmień jego znak
+    if (is_negative_result) {
+        program.emplace_back("SET", 0);
+        program.emplace_back("SUB", res_addr);
+        program.emplace_back("STORE", res_addr);
+    }
 
-    return new Entity(_entity_l->value * _entity_r->value, -1, "temp");
+    // Zwolnienie rejestrów
+    free_register(a_addr);
+    free_register(b_addr);
+
+    return new Entity(a * b, -1, "temp");
 }
 
 Entity* _div(Entity* _entity_l, Entity* _entity_r) {
+    // Obsługa dzielenia przez 2 jako specjalny przypadek
     if (_entity_r->address == -1 && _entity_r->value == 2) {
         program.emplace_back("LOAD", _entity_l->address); 
         program.emplace_back("HALF");
         return new Entity(_entity_l->value / 2, -1, "temp");
     }
 
+    // Przygotowanie adresów i wartości
     int a_addr = _entity_l->address;
     int b_addr = _entity_r->address;
 
     if (_entity_l->address == -1 && _entity_r->address == -1) {
         return new Entity(_entity_l->value / _entity_r->value, -1, "");
-    }
-    else if (_entity_l->address == -1 && _entity_r->address != -1) {
+    } else if (_entity_l->address == -1 && _entity_r->address != -1) {
         program.emplace_back("SET", _entity_l->value);
         a_addr = allocate_register();
         program.emplace_back("STORE", a_addr);
-    }
-    else if (_entity_r->address == -1 && _entity_l->address != -1) {
+    } else if (_entity_r->address == -1 && _entity_l->address != -1) {
         program.emplace_back("SET", _entity_r->value);
         b_addr = allocate_register();
+        program.emplace_back("STORE", b_addr);
+    }
+
+
+    bool is_negative_result = (_entity_l->value < 0) ^ (_entity_r->value < 0);
+
+    if (_entity_l->value < 0) {
+        program.emplace_back("SET", 0);         // Zanegowanie a_addr
+        program.emplace_back("SUB", a_addr);
+        program.emplace_back("STORE", a_addr);
+    }
+    if (_entity_r->value < 0) {
+        program.emplace_back("SET", 0);         // Zanegowanie b_addr
+        program.emplace_back("SUB", b_addr);
         program.emplace_back("STORE", b_addr);
     }
 
@@ -307,33 +347,29 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("LOAD", a_addr); 
     program.emplace_back("STORE", remainder_reg);
 
+    // Pętla dzielenia
     program.emplace_back("LOAD", remainder_reg); 
 
-    std::cout << "RIGHT VALUE " << _entity_r->value << "\n";
-    if (_entity_r->value > 0) {
-        program.emplace_back("SUB", b_addr);
-    }
-    else {
-        program.emplace_back("ADD", b_addr);
-    }
-    program.emplace_back("JNEG", 8); // Exit loop 
+    program.emplace_back("SUB", b_addr); 
+    program.emplace_back("JNEG", 8); // Wyjście z pętli, jeśli reszta < 0
 
     program.emplace_back("SET", 1);
     program.emplace_back("ADD", quotient_reg);
     program.emplace_back("STORE", quotient_reg);
 
     program.emplace_back("LOAD", remainder_reg);
-    if (_entity_r->value > 0) {
-        program.emplace_back("SUB", b_addr);
-    }
-    else {
-        program.emplace_back("ADD", b_addr);
-    }
+    program.emplace_back("SUB", b_addr);
     program.emplace_back("STORE", remainder_reg);
 
     program.emplace_back("JUMP", -9);
 
-    program.emplace_back("LOAD", quotient_reg); 
+    // Na koniec, jeśli wynik jest ujemny, zmień znak
+    program.emplace_back("LOAD", quotient_reg);
+    if (is_negative_result) {
+        program.emplace_back("SET", 0);     
+        program.emplace_back("SUB", quotient_reg);
+        //program.emplace_back("STORE", quotient_reg);
+    }
 
     free_register(remainder_reg);
     free_register(quotient_reg);
@@ -348,38 +384,51 @@ Entity* _mod(Entity* _entity_l, Entity* _entity_r) {
     if (_entity_l->address == -1 && _entity_r->address == -1) {
         return new Entity(_entity_l->value % _entity_r->value, -1, "");
     }
-    else if (_entity_l->address == -1 && _entity_r->address != -1) {
+
+    if (_entity_l->address == -1 && _entity_r->address != -1) {
         program.emplace_back("SET", _entity_l->value);
         a_addr = allocate_register();
         program.emplace_back("STORE", a_addr);
-    }
-    else if (_entity_r->address == -1 && _entity_l->address != -1) {
+    } else if (_entity_r->address == -1 && _entity_l->address != -1) {
         program.emplace_back("SET", _entity_r->value);
         b_addr = allocate_register();
         program.emplace_back("STORE", b_addr);
     }
 
-    int res_addr = allocate_register();
-
     program.emplace_back("LOAD", b_addr);
-    program.emplace_back("JZERO", 10);
+    program.emplace_back("JZERO", 12);
 
+    bool is_negative_result = (_entity_r->value < 0) ^ (_entity_l->value < 0);
+    if (_entity_l->value < 0) {
+        program.emplace_back("SET", 0);
+        program.emplace_back("SUB", a_addr);
+        program.emplace_back("STORE", a_addr);
+    }
+    if (_entity_r->value < 0) {
+        program.emplace_back("SET", 0);
+        program.emplace_back("SUB", b_addr);
+        program.emplace_back("STORE", b_addr);
+    }
+
+    int res_addr = allocate_register();
     program.emplace_back("LOAD", a_addr);
     program.emplace_back("STORE", res_addr);
 
-    program.emplace_back("LOAD", res_addr);
-    if (_entity_r->value > 0) {
-        program.emplace_back("SUB", b_addr);
-    }
-    else {
-        program.emplace_back("ADD", b_addr);
-    }
+    program.emplace_back("LOAD", res_addr); 
+    program.emplace_back("SUB", b_addr);
+    if (!is_negative_result) 
+        program.emplace_back("JNEG", 4);
     program.emplace_back("STORE", res_addr);
-
     program.emplace_back("JNEG", 2);
-    program.emplace_back("JUMP", -4);
+    program.emplace_back("JUMP", -4); 
 
-    program.emplace_back("ADD", b_addr);
+    // if (is_negative_result) {
+    //     program.emplace_back("SET", 0);
+    //     program.emplace_back("SUB", res_addr);
+    //     program.emplace_back("STORE", res_addr);
+    // }
+
+    program.emplace_back("LOAD", res_addr);
 
     free_register(res_addr);
 
@@ -393,6 +442,26 @@ int get_variable_address(const std::string& name) {
     // else 
     if (global_symbol_table.find(name) != global_symbol_table.end()) {
         return global_symbol_table[name].address;
+    } 
+    else {
+        yyerror(("Undefined variable: " + name).c_str());
+        exit(1);
+    }
+}
+
+int get_variable_value(const std::string& name) {
+    if (global_symbol_table.find(name) != global_symbol_table.end()) {
+        return global_symbol_table[name].value;
+    } 
+    else {
+        yyerror(("Undefined variable: " + name).c_str());
+        exit(1);
+    }
+}
+
+void set_variable_value(const std::string& name, int value) {
+    if (global_symbol_table.find(name) != global_symbol_table.end()) {
+        global_symbol_table[name].value = value;
     } 
     else {
         yyerror(("Undefined variable: " + name).c_str());

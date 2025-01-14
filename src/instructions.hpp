@@ -26,6 +26,7 @@ struct Entity {
 struct symbol_entry {    
     symbol type; 	
 	int address;
+	int value;
 	int a;
 	int b;    
 };
@@ -59,6 +60,8 @@ extern std::vector<instruction> program;
 extern std::unordered_map<std::string, symbol_entry> global_symbol_table;
 
 int get_variable_address(const std::string& name);
+int get_variable_value(const std::string& name);
+void set_variable_value(const std::string& name, int value);
 int allocate_register();
 void free_register(int reg);
 

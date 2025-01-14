@@ -1,8 +1,8 @@
 PROGRAM IS
   a,b,c
 BEGIN
-  a := 2 * 5;
-  b := 2;
-  c := a * 2;
+  a := 21;
+  b := -5;
+  c := a % b;
   WRITE c;
 END

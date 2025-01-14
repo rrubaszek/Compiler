@@ -86,6 +86,7 @@ commands :
 
 command :
     identifier ASSIGN expression ';' {
+        set_variable_value($1, $3->value);
         $$ = _assign($1, $3);
     }
     | IF condition THEN commands ELSE commands ENDIF {
@@ -212,7 +213,7 @@ value :
         $$ = new Entity(-$2, -1, "");
     }
     | identifier {
-        $$ = new Entity(-1, get_variable_address($1), $1);
+        $$ = new Entity(get_variable_value($1), get_variable_address($1), $1);
     }
 ;
 
