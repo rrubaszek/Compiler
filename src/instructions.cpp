@@ -2,6 +2,11 @@
 
 #include <iostream>
 
+// For conditions
+#define FALSE 0
+#define TRUE 1
+#define NONE 2
+
 std::unordered_map<std::string, symbol_entry> global_symbol_table;
 std::vector<instruction> program;
 
@@ -97,8 +102,12 @@ int _if_stmt(int cond_addr, int commands_addr) {
     return program.size() - 1;
 }
 
-int _if_else_stmt(int cond_addr, int commands_addr, int else_addr) {
-    program.insert(program.begin() + cond_addr + 1, { "JUMP", commands_addr - cond_addr + 2 });
+int _if_else_stmt(const std::pair<int, int>* cond_addr, int commands_addr, int else_addr) {
+    if (cond_addr->second == TRUE) {
+        program.erase(program.begin() + commands_addr, program.begin() + else_addr);
+        return program.size() - 1;
+    }
+    program.insert(program.begin() + cond_addr->first + 1, { "JUMP", commands_addr - cond_addr->first + 2 });
     program.insert(program.begin() + commands_addr + 2, { "JUMP", else_addr - commands_addr + 1 });
     return program.size() - 1;
 }
@@ -125,12 +134,33 @@ int _for_dec_stmt(const std::string& var, int start, int end, int commands_addr)
 
 }
 
-int _eq(int a, int b) {
-    program.emplace_back("LOAD", a);
-    program.emplace_back("SUB", b);
-    program.emplace_back("JZERO", 2);
+std::pair<int, int> *_eq(Entity* a, Entity* b) {
+    if (a->address == -1 && b->address == -1) {
+        if (a->value == b->value) {
+            return new std::pair<int, int>(program.size() - 1, TRUE); // always true, dont put the condition
+        }
+        else {
+            return new std::pair<int, int>(program.size() - 1, FALSE); // always false, remove code block after condition
+        }
+    }
 
-    return program.size() - 1; // Return pointer to the program instruction with jump
+    if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JZERO", 2);
+    }
+    else if (a->address != -1 && b->address == -1) {
+        program.emplace_back("SET", b->value);
+        program.emplace_back("SUB", a->address);
+        program.emplace_back("JZERO", 2);
+    }
+    else {
+        program.emplace_back("LOAD", a->address);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JZERO", 2);
+    }
+
+    return new std::pair<int, int>(program.size() - 1, NONE); // Return pointer to the program instruction with jump
 }
 
 int _neq(int a, int b) {
@@ -227,12 +257,10 @@ Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
     int a_addr = _entity_l->address;
     int b_addr = _entity_r->address;
 
-    // Obsługa przypadku, gdy obie liczby są stałymi
     if (_entity_l->address == -1 && _entity_r->address == -1) {
         return new Entity(a * b, -1, "");
     }
 
-    // Przygotowanie liczb i adresów
     if (_entity_l->address == -1 && _entity_r->address != -1) {
         program.emplace_back("SET", a);
         a_addr = allocate_register();
@@ -243,21 +271,19 @@ Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
         program.emplace_back("STORE", b_addr);
     }
 
-    // Obsługa znaków: sprawdzanie i ustawianie wartości bezwzględnych
-    bool is_negative_result = (a < 0) ^ (b < 0); // Wynik ujemny, jeśli tylko jedna liczba jest ujemna
+    bool is_negative_result = (a < 0) ^ (b < 0); 
 
     if (a < 0) {
-        program.emplace_back("SET", 0);         // Zanegowanie a_addr
+        program.emplace_back("SET", 0);        
         program.emplace_back("SUB", a_addr);
         program.emplace_back("STORE", a_addr);
     }
     if (b < 0) {
-        program.emplace_back("SET", 0);         // Zanegowanie b_addr
+        program.emplace_back("SET", 0);        
         program.emplace_back("SUB", b_addr);
         program.emplace_back("STORE", b_addr);
     }
 
-    // Algorytm iteracyjnego dodawania
     if (a > b) {
         std::swap(a, b);
         std::swap(a_addr, b_addr);
@@ -269,10 +295,10 @@ Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("STORE", res_addr);
 
     program.emplace_back("LOAD", b_addr);
-    program.emplace_back("JZERO", 10); // Wyjście, jeśli b_addr == 0
+    program.emplace_back("JZERO", 10); 
 
     program.emplace_back("LOAD", a_addr);
-    program.emplace_back("JZERO", 8); // Wyjście, jeśli a_addr == 0
+    program.emplace_back("JZERO", 8); 
 
     program.emplace_back("LOAD", res_addr);
     program.emplace_back("ADD", a_addr);
@@ -281,34 +307,28 @@ Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("SET", -1); 
     program.emplace_back("ADD", b_addr);
     program.emplace_back("STORE", b_addr);
-    program.emplace_back("JPOS", -6); // Kontynuuj, jeśli b_addr > 0
+    program.emplace_back("JPOS", -6); 
 
-    // Zapisanie wyniku
     program.emplace_back("LOAD", res_addr);
 
-    // Jeśli wynik jest ujemny, zmień jego znak
     if (is_negative_result) {
         program.emplace_back("SET", 0);
         program.emplace_back("SUB", res_addr);
-        program.emplace_back("STORE", res_addr);
+        // program.emplace_back("STORE", res_addr);
     }
 
-    // Zwolnienie rejestrów
-    free_register(a_addr);
-    free_register(b_addr);
+    free_register(res_addr);
 
     return new Entity(a * b, -1, "temp");
 }
 
 Entity* _div(Entity* _entity_l, Entity* _entity_r) {
-    // Obsługa dzielenia przez 2 jako specjalny przypadek
     if (_entity_r->address == -1 && _entity_r->value == 2) {
         program.emplace_back("LOAD", _entity_l->address); 
         program.emplace_back("HALF");
         return new Entity(_entity_l->value / 2, -1, "temp");
     }
 
-    // Przygotowanie adresów i wartości
     int a_addr = _entity_l->address;
     int b_addr = _entity_r->address;
 
@@ -328,12 +348,12 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
     bool is_negative_result = (_entity_l->value < 0) ^ (_entity_r->value < 0);
 
     if (_entity_l->value < 0) {
-        program.emplace_back("SET", 0);         // Zanegowanie a_addr
+        program.emplace_back("SET", 0);      
         program.emplace_back("SUB", a_addr);
         program.emplace_back("STORE", a_addr);
     }
     if (_entity_r->value < 0) {
-        program.emplace_back("SET", 0);         // Zanegowanie b_addr
+        program.emplace_back("SET", 0);  
         program.emplace_back("SUB", b_addr);
         program.emplace_back("STORE", b_addr);
     }
@@ -347,11 +367,10 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("LOAD", a_addr); 
     program.emplace_back("STORE", remainder_reg);
 
-    // Pętla dzielenia
     program.emplace_back("LOAD", remainder_reg); 
 
     program.emplace_back("SUB", b_addr); 
-    program.emplace_back("JNEG", 8); // Wyjście z pętli, jeśli reszta < 0
+    program.emplace_back("JNEG", 8);
 
     program.emplace_back("SET", 1);
     program.emplace_back("ADD", quotient_reg);
@@ -363,7 +382,6 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
 
     program.emplace_back("JUMP", -9);
 
-    // Na koniec, jeśli wynik jest ujemny, zmień znak
     program.emplace_back("LOAD", quotient_reg);
     if (is_negative_result) {
         program.emplace_back("SET", 0);     
@@ -421,13 +439,6 @@ Entity* _mod(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("STORE", res_addr);
     program.emplace_back("JNEG", 2);
     program.emplace_back("JUMP", -4); 
-
-    // if (is_negative_result) {
-    //     program.emplace_back("SET", 0);
-    //     program.emplace_back("SUB", res_addr);
-    //     program.emplace_back("STORE", res_addr);
-    // }
-
     program.emplace_back("LOAD", res_addr);
 
     free_register(res_addr);

@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <string>
+#include <utility>
 
 int yylex();
 int yyparse();
@@ -21,6 +22,7 @@ extern bool local;
     long long   llval;              // For numbers
     char*       strval;             // For identifiers
     int         address;
+    std::pair<int, int> *_condition;
     Entity      *_entity;
 }
 
@@ -34,7 +36,8 @@ extern bool local;
 %token <strval> pidentifier 
 %token <llval> num
 
-%type <address> commands command condition
+%type <address> commands command
+%type <_condition> condition
 %type <strval> declarations identifier
 %type <_entity> value expression 
 
@@ -90,7 +93,7 @@ command :
         $$ = _assign($1, $3);
     }
     | IF condition THEN commands ELSE commands ENDIF {
-        //$$ = _if_else_stmt($2, $4, $6);
+        $$ = _if_else_stmt($2, $4, $6);
     }
     | IF condition THEN commands ENDIF {
         //$$ = _if_stmt($2, $4);
@@ -186,7 +189,7 @@ expression :
 
 condition :
     value EQ value {
-        //$$ = _eq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        $$ = _eq($1, $3); // Return pointer to the instruction with { JUMP -1 }, 1 if always true, 0 if always false
     }
     | value NEQ value {
         //$$ = _neq($1, $3); // Return pointer to the instruction with { JUMP -1 }
