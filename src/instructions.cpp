@@ -107,6 +107,11 @@ int _if_else_stmt(const std::pair<int, int>* cond_addr, int commands_addr, int e
         program.erase(program.begin() + commands_addr, program.begin() + else_addr);
         return program.size() - 1;
     }
+
+    if (cond_addr->second == FALSE) {
+        // Implement always false logic
+    }
+
     program.insert(program.begin() + cond_addr->first + 1, { "JUMP", commands_addr - cond_addr->first + 2 });
     program.insert(program.begin() + commands_addr + 2, { "JUMP", else_addr - commands_addr + 1 });
     return program.size() - 1;
@@ -228,12 +233,11 @@ Entity* _add(Entity* _entity_l, Entity* _entity_r) {
         program.emplace_back("LOAD", _entity_l->address);
         program.emplace_back("ADD", _entity_r->address);
     }
-    return new Entity(_entity_l->value + _entity_r->value, -1, "temp");
+    return new Entity(-1, -1, "temp");
 }
 
 Entity* _sub(Entity* _entity_l, Entity* _entity_r) {
     if (_entity_l->address == -1 && _entity_r->address == -1) {
-        //program.emplace_back("SET", _entity_l->value + _entity_r->value);
         return new Entity(_entity_l->value - _entity_r->value, -1, "");
     }
     else if (_entity_l->address == -1 && _entity_r->address != -1) {
@@ -248,93 +252,19 @@ Entity* _sub(Entity* _entity_l, Entity* _entity_r) {
         program.emplace_back("LOAD", _entity_l->address);
         program.emplace_back("SUB", _entity_r->address);
     }
-    return new Entity(_entity_l->value - _entity_r->value, -1, "temp");
+    return new Entity(-1, -1, "temp");
 }
 
 Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
-    int a = _entity_l->value;
-    int b = _entity_r->value;
     int a_addr = _entity_l->address;
     int b_addr = _entity_r->address;
 
     if (_entity_l->address == -1 && _entity_r->address == -1) {
-        return new Entity(a * b, -1, "");
+        return new Entity(_entity_l->value * _entity_r->value, -1, "");
     }
 
+    // Entities has values only when they are constants (address is -1)
     if (_entity_l->address == -1 && _entity_r->address != -1) {
-        program.emplace_back("SET", a);
-        a_addr = allocate_register();
-        program.emplace_back("STORE", a_addr);
-    } else if (_entity_r->address == -1 && _entity_l->address != -1) {
-        program.emplace_back("SET", b);
-        b_addr = allocate_register();
-        program.emplace_back("STORE", b_addr);
-    }
-
-    bool is_negative_result = (a < 0) ^ (b < 0); 
-
-    if (a < 0) {
-        program.emplace_back("SET", 0);        
-        program.emplace_back("SUB", a_addr);
-        program.emplace_back("STORE", a_addr);
-    }
-    if (b < 0) {
-        program.emplace_back("SET", 0);        
-        program.emplace_back("SUB", b_addr);
-        program.emplace_back("STORE", b_addr);
-    }
-
-    if (a > b) {
-        std::swap(a, b);
-        std::swap(a_addr, b_addr);
-    }
-
-    int res_addr = allocate_register();
-
-    program.emplace_back("SET", 0);
-    program.emplace_back("STORE", res_addr);
-
-    program.emplace_back("LOAD", b_addr);
-    program.emplace_back("JZERO", 10); 
-
-    program.emplace_back("LOAD", a_addr);
-    program.emplace_back("JZERO", 8); 
-
-    program.emplace_back("LOAD", res_addr);
-    program.emplace_back("ADD", a_addr);
-    program.emplace_back("STORE", res_addr);
-
-    program.emplace_back("SET", -1); 
-    program.emplace_back("ADD", b_addr);
-    program.emplace_back("STORE", b_addr);
-    program.emplace_back("JPOS", -6); 
-
-    program.emplace_back("LOAD", res_addr);
-
-    if (is_negative_result) {
-        program.emplace_back("SET", 0);
-        program.emplace_back("SUB", res_addr);
-        // program.emplace_back("STORE", res_addr);
-    }
-
-    free_register(res_addr);
-
-    return new Entity(a * b, -1, "temp");
-}
-
-Entity* _div(Entity* _entity_l, Entity* _entity_r) {
-    if (_entity_r->address == -1 && _entity_r->value == 2) {
-        program.emplace_back("LOAD", _entity_l->address); 
-        program.emplace_back("HALF");
-        return new Entity(_entity_l->value / 2, -1, "temp");
-    }
-
-    int a_addr = _entity_l->address;
-    int b_addr = _entity_r->address;
-
-    if (_entity_l->address == -1 && _entity_r->address == -1) {
-        return new Entity(_entity_l->value / _entity_r->value, -1, "");
-    } else if (_entity_l->address == -1 && _entity_r->address != -1) {
         program.emplace_back("SET", _entity_l->value);
         a_addr = allocate_register();
         program.emplace_back("STORE", a_addr);
@@ -344,55 +274,203 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
         program.emplace_back("STORE", b_addr);
     }
 
+    int result_addr = allocate_register(); 
+      
+    program.emplace_back("SET", 0);        
+    program.emplace_back("STORE", result_addr);
 
-    bool is_negative_result = (_entity_l->value < 0) ^ (_entity_r->value < 0);
+    // Check if a or b are negative
+    int sign_addr = allocate_register();
 
-    if (_entity_l->value < 0) {
-        program.emplace_back("SET", 0);      
-        program.emplace_back("SUB", a_addr);
-        program.emplace_back("STORE", a_addr);
+    program.emplace_back("SET", 1);
+    program.emplace_back("STORE", sign_addr);
+
+    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("JPOS", 6);       
+    program.emplace_back("SET", -1);      
+    program.emplace_back("STORE", sign_addr);
+    program.emplace_back("SET", 0);       
+    program.emplace_back("SUB", b_addr);
+    program.emplace_back("STORE", b_addr);
+
+    program.emplace_back("LOAD", a_addr);
+    program.emplace_back("JPOS", 7);       
+    program.emplace_back("SET", 0);
+    program.emplace_back("SUB", sign_addr); 
+    program.emplace_back("STORE", sign_addr);
+    program.emplace_back("SET", 0);      
+    program.emplace_back("SUB", a_addr);
+    program.emplace_back("STORE", a_addr);
+
+    // Main multiplication loop
+    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("JZERO", 18);     // Exit if b == 0
+
+    int check_parity = allocate_register();
+
+    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("HALF");
+    program.emplace_back("STORE", check_parity); 
+    program.emplace_back("LOAD", check_parity);
+    program.emplace_back("ADD", check_parity);
+    program.emplace_back("SUB", b_addr);
+    program.emplace_back("JZERO", 4); // If b is even don't add a to the result
+
+    free_register(check_parity);
+
+    // Add a to the result
+    program.emplace_back("LOAD", result_addr);
+    program.emplace_back("ADD", a_addr); 
+    program.emplace_back("STORE", result_addr);
+
+    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("HALF");
+    program.emplace_back("STORE", b_addr);
+
+    program.emplace_back("LOAD", a_addr);
+    program.emplace_back("ADD", a_addr);
+    program.emplace_back("STORE", a_addr);
+
+    program.emplace_back("JUMP", -18); // Back to the main loop
+
+    // Make result with right sign
+    program.emplace_back("LOAD", sign_addr);
+    program.emplace_back("JPOS", 4);       
+    program.emplace_back("SET", 0);        
+    program.emplace_back("SUB", result_addr);
+    program.emplace_back("STORE", result_addr);
+    program.emplace_back("LOAD", result_addr);
+
+    free_register(sign_addr);
+    free_register(result_addr);
+
+    return new Entity(-1, -1, "temp");
+}
+
+Entity* _div(Entity* _entity_l, Entity* _entity_r) {
+    if (_entity_r->address == -1 && _entity_r->value == 2) {
+        program.emplace_back("LOAD", _entity_l->address); 
+        program.emplace_back("HALF");
+        return new Entity(-1, -1, "temp");
     }
-    if (_entity_r->value < 0) {
-        program.emplace_back("SET", 0);  
-        program.emplace_back("SUB", b_addr);
+
+    int a_addr = _entity_l->address;
+    int b_addr = _entity_r->address;
+
+    // Entities has value only for constants
+    if (_entity_l->address == -1 && _entity_r->address == -1) {
+        return new Entity(_entity_l->value / _entity_r->value, -1, "");
+    } 
+    else if (_entity_l->address == -1 && _entity_r->address != -1) {
+        program.emplace_back("SET", _entity_l->value);
+        a_addr = allocate_register();
+        program.emplace_back("STORE", a_addr);
+    } 
+    else if (_entity_r->address == -1 && _entity_l->address != -1) {
+        program.emplace_back("SET", _entity_r->value);
+        b_addr = allocate_register();
         program.emplace_back("STORE", b_addr);
     }
 
-    int quotient_reg = allocate_register(); 
-    int remainder_reg = allocate_register(); 
+    int quotient_addr = allocate_register(); 
+    int remainder_addr = allocate_register(); 
+    int temp_addr = allocate_register();      
+    int sign_addr = allocate_register();     
 
-    program.emplace_back("SET", 0); 
-    program.emplace_back("STORE", quotient_reg);
+    program.emplace_back("SET", 1);         
+    program.emplace_back("STORE", sign_addr);
 
-    program.emplace_back("LOAD", a_addr); 
-    program.emplace_back("STORE", remainder_reg);
-
-    program.emplace_back("LOAD", remainder_reg); 
-
-    program.emplace_back("SUB", b_addr); 
-    program.emplace_back("JNEG", 8);
-
-    program.emplace_back("SET", 1);
-    program.emplace_back("ADD", quotient_reg);
-    program.emplace_back("STORE", quotient_reg);
-
-    program.emplace_back("LOAD", remainder_reg);
+    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("JPOS", 6);       
+    program.emplace_back("SET", -1);      
+    program.emplace_back("STORE", sign_addr);
+    program.emplace_back("SET", 0);       
     program.emplace_back("SUB", b_addr);
-    program.emplace_back("STORE", remainder_reg);
+    program.emplace_back("STORE", b_addr);
 
+    program.emplace_back("LOAD", a_addr);
+    program.emplace_back("JPOS", 7);       
+    program.emplace_back("SET", 0);
+    program.emplace_back("SUB", sign_addr); 
+    program.emplace_back("STORE", sign_addr);
+    program.emplace_back("SET", 0);      
+    program.emplace_back("SUB", a_addr);
+    program.emplace_back("STORE", a_addr);
+
+    program.emplace_back("SET", 0);    
+    program.emplace_back("STORE", quotient_addr);
+
+    program.emplace_back("LOAD", a_addr);
+    program.emplace_back("STORE", remainder_addr);
+
+    // Find largest b multiply
+    program.emplace_back("SET", 1);
+    program.emplace_back("STORE", temp_addr);
+
+    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("ADD", b_addr);
+    program.emplace_back("STORE", b_addr);
+    program.emplace_back("LOAD", temp_addr);
+    program.emplace_back("ADD", temp_addr);
+    program.emplace_back("STORE", temp_addr);
+    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("SUB", a_addr);
+    program.emplace_back("JPOS", 2);
     program.emplace_back("JUMP", -9);
 
-    program.emplace_back("LOAD", quotient_reg);
-    if (is_negative_result) {
-        program.emplace_back("SET", 0);     
-        program.emplace_back("SUB", quotient_reg);
-        //program.emplace_back("STORE", quotient_reg);
-    }
+    // Redo b and temp to the previous values
+    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("HALF");
+    program.emplace_back("STORE", b_addr);
+    program.emplace_back("LOAD", temp_addr);
+    program.emplace_back("HALF");
+    program.emplace_back("STORE", temp_addr);
 
-    free_register(remainder_reg);
-    free_register(quotient_reg);
+    // Main loop
+    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("JZERO", 15);
 
-    return new Entity(_entity_l->value / _entity_r->value, -1, "temp");
+    program.emplace_back("LOAD", remainder_addr);
+    program.emplace_back("SUB", b_addr);
+    program.emplace_back("JNEG", 5);
+    program.emplace_back("STORE", remainder_addr);
+
+    program.emplace_back("LOAD", quotient_addr);
+    program.emplace_back("ADD", temp_addr);
+    program.emplace_back("STORE", quotient_addr);
+
+    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("HALF");
+    program.emplace_back("STORE", b_addr);
+    program.emplace_back("LOAD", temp_addr);
+    program.emplace_back("HALF");
+    program.emplace_back("STORE", temp_addr);
+    program.emplace_back("JUMP", -15);
+
+    // Reminder correction
+    // program.emplace_back("LOAD", _entity_r->address);
+    // program.emplace_back("JNEG", 4);
+    // program.emplace_back("LOAD", quotient_addr);
+    // program.emplace_back("ADD", _entity_r->address);
+    // program.emplace_back("STORE", quotient_addr);
+
+    program.emplace_back("PUT", remainder_addr);
+
+    // Set the right sign
+    program.emplace_back("LOAD", sign_addr);
+    program.emplace_back("JPOS", 4);
+    program.emplace_back("SET", 0);
+    program.emplace_back("SUB", quotient_addr);
+    program.emplace_back("STORE", quotient_addr);
+
+    program.emplace_back("LOAD", quotient_addr);
+
+    free_register(temp_addr);
+    free_register(sign_addr);
+    free_register(quotient_addr);
+    free_register(remainder_addr);
+
+    return new Entity(-1, -1, "temp");
 }
 
 Entity* _mod(Entity* _entity_l, Entity* _entity_r) {
