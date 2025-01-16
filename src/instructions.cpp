@@ -375,15 +375,18 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
     int quotient_addr = allocate_register(); 
     int remainder_addr = allocate_register(); 
     int temp_addr = allocate_register();      
-    int sign_addr = allocate_register();     
+    int sign_addr = allocate_register();  
+    int divisor_sign = allocate_register();   
 
     program.emplace_back("SET", 1);         
     program.emplace_back("STORE", sign_addr);
+    program.emplace_back("STORE", divisor_sign);
 
     program.emplace_back("LOAD", b_addr);
-    program.emplace_back("JPOS", 6);       
+    program.emplace_back("JPOS", 7);       
     program.emplace_back("SET", -1);      
     program.emplace_back("STORE", sign_addr);
+    program.emplace_back("STORE", divisor_sign);
     program.emplace_back("SET", 0);       
     program.emplace_back("SUB", b_addr);
     program.emplace_back("STORE", b_addr);
@@ -427,7 +430,7 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("STORE", temp_addr);
 
     // Main loop
-    program.emplace_back("LOAD", b_addr);
+    program.emplace_back("LOAD", temp_addr);
     program.emplace_back("JZERO", 15);
 
     program.emplace_back("LOAD", remainder_addr);
@@ -447,14 +450,11 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("STORE", temp_addr);
     program.emplace_back("JUMP", -15);
 
-    // Reminder correction
-    // program.emplace_back("LOAD", _entity_r->address);
-    // program.emplace_back("JNEG", 4);
-    // program.emplace_back("LOAD", quotient_addr);
-    // program.emplace_back("ADD", _entity_r->address);
-    // program.emplace_back("STORE", quotient_addr);
-
-    program.emplace_back("PUT", remainder_addr);
+    program.emplace_back("LOAD", divisor_sign);
+    program.emplace_back("JPOS", 4);
+    program.emplace_back("SET", 1);
+    program.emplace_back("ADD", quotient_addr);
+    program.emplace_back("STORE", quotient_addr);
 
     // Set the right sign
     program.emplace_back("LOAD", sign_addr);
@@ -469,6 +469,7 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
     free_register(sign_addr);
     free_register(quotient_addr);
     free_register(remainder_addr);
+    free_register(divisor_sign);
 
     return new Entity(-1, -1, "temp");
 }
@@ -491,35 +492,7 @@ Entity* _mod(Entity* _entity_l, Entity* _entity_r) {
         program.emplace_back("STORE", b_addr);
     }
 
-    program.emplace_back("LOAD", b_addr);
-    program.emplace_back("JZERO", 12);
-
-    bool is_negative_result = (_entity_r->value < 0) ^ (_entity_l->value < 0);
-    if (_entity_l->value < 0) {
-        program.emplace_back("SET", 0);
-        program.emplace_back("SUB", a_addr);
-        program.emplace_back("STORE", a_addr);
-    }
-    if (_entity_r->value < 0) {
-        program.emplace_back("SET", 0);
-        program.emplace_back("SUB", b_addr);
-        program.emplace_back("STORE", b_addr);
-    }
-
-    int res_addr = allocate_register();
-    program.emplace_back("LOAD", a_addr);
-    program.emplace_back("STORE", res_addr);
-
-    program.emplace_back("LOAD", res_addr); 
-    program.emplace_back("SUB", b_addr);
-    if (!is_negative_result) 
-        program.emplace_back("JNEG", 4);
-    program.emplace_back("STORE", res_addr);
-    program.emplace_back("JNEG", 2);
-    program.emplace_back("JUMP", -4); 
-    program.emplace_back("LOAD", res_addr);
-
-    free_register(res_addr);
+    // TODO: Implement rest of the modulo logic
 
     return new Entity(-1, -1, "temp");
 }
@@ -541,16 +514,6 @@ int get_variable_address(const std::string& name) {
 int get_variable_value(const std::string& name) {
     if (global_symbol_table.find(name) != global_symbol_table.end()) {
         return global_symbol_table[name].value;
-    } 
-    else {
-        yyerror(("Undefined variable: " + name).c_str());
-        exit(1);
-    }
-}
-
-void set_variable_value(const std::string& name, int value) {
-    if (global_symbol_table.find(name) != global_symbol_table.end()) {
-        global_symbol_table[name].value = value;
     } 
     else {
         yyerror(("Undefined variable: " + name).c_str());
