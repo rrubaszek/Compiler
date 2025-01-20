@@ -23,7 +23,8 @@ void _put_rtrn() {
     program.emplace_back("RTRN", 1);
 }
 
-int _assign(const std::string& var, Entity* _entity) {
+std::pair<int, int>* _assign(const std::string& var, Entity* _entity) {
+    int start = program.size() - 1;
     if (_entity->name == "") {
         program.emplace_back("SET", _entity->value);
         program.emplace_back("STORE", get_variable_address(var));
@@ -31,17 +32,19 @@ int _assign(const std::string& var, Entity* _entity) {
     else {
         program.emplace_back("STORE", get_variable_address(var));
     }
-    return program.size() - 1;
+    return new std::pair<int, int>(start, program.size() - 1);
 }
 
-int _read(const std::string& var) {
+std::pair<int, int> *_read(const std::string& var) {
+    int start = program.size() - 1;
     program.emplace_back("GET", get_variable_address(var));
-    return program.size() - 1;
+    return new std::pair<int, int>(start, program.size() - 1);
 }
 
-int _write(int address) {
+std::pair<int, int> *_write(int address) {
+    int start = program.size() - 1;
     program.emplace_back("PUT", address);
-    return program.size() - 1;
+    return new std::pair<int, int>(start, program.size() - 1);
 }
 
 void _procedure_head(const std::string& name) {
@@ -58,18 +61,21 @@ void _procedure_head(const std::string& name) {
     // proc_symbol_table.clear();
 }
 
-void _declare(const std::string& name, symbol type, int a, int b) {
+int _declare(const std::string& name, symbol type, int a, int b) {
     if(!local) {
         if (global_symbol_table.count(name) == 0) {
             int var_register = allocate_register();
             symbol_entry entry = { type, var_register, 0, a, b };  // basic value is 0
             global_symbol_table[name] = entry;
             std::cout << "Dodano do pamięci zmienną: " << name << "\n";
+            return var_register;
         }
         else {
             yyerror("Variable redeclaration");
         }
     } 
+
+    return 0;
     // else {
     //     if (local_symbol_table.count(name) == 0) {
     //         int var_register = allocate_register();
@@ -97,46 +103,92 @@ void _call_procedure(const std::string& name) {
     // program.emplace_back("CALL", proc_address); // Jump to procedure
 }
 
-int _if_stmt(int cond_addr, int commands_addr) {
-    program.insert(program.begin() + cond_addr + 1, { "JUMP", commands_addr - cond_addr + 1 });
-    return program.size() - 1;
-}
-
-int _if_else_stmt(const std::pair<int, int>* cond_addr, int commands_addr, int else_addr) {
+std::pair<int, int> *_if_stmt(const std::pair<int, int>* cond_addr, 
+                            const std::pair<int, int>* commands_addr) {
+    int start = program.size() - 1;
     if (cond_addr->second == TRUE) {
-        program.erase(program.begin() + commands_addr, program.begin() + else_addr);
-        return program.size() - 1;
+        return new std::pair<int, int>(start - 1, program.size() - 1);
     }
 
     if (cond_addr->second == FALSE) {
-        // Implement always false logic
+        program.erase(program.begin() + cond_addr->first + 1, program.begin() + commands_addr->second + 1);
+        return new std::pair<int, int>(start, program.size() - 1);
     }
 
-    program.insert(program.begin() + cond_addr->first + 1, { "JUMP", commands_addr - cond_addr->first + 2 });
-    program.insert(program.begin() + commands_addr + 2, { "JUMP", else_addr - commands_addr + 1 });
-    return program.size() - 1;
+    program.insert(program.begin() + cond_addr->first + 1, { "JUMP", commands_addr->second - cond_addr->first + 1 });
+    return new std::pair<int, int>(start, program.size() - 1);
 }
 
-int _while_stmt(int cond_addr, int commands_addr) {
+std::pair<int, int> *_if_else_stmt(const std::pair<int, int>* cond_addr, 
+                                const std::pair<int, int>* commands_addr, 
+                                const std::pair<int, int>* else_addr) {
+    int start = program.size() - 1;
+    if (cond_addr->second == TRUE) {
+        program.erase(program.begin() + commands_addr->second + 1, program.begin() + else_addr->second + 1);
+        return new std::pair<int, int>(start, program.size() - 1);
+    }
+
+    if (cond_addr->second == FALSE) {
+        program.erase(program.begin() + cond_addr->first + 1, program.begin() + commands_addr->second + 1);
+        return new std::pair<int, int>(start, program.size() - 1);
+    }
+
+    program.insert(program.begin() + cond_addr->first + 1, { "JUMP", commands_addr->second - cond_addr->first + 2 });
+    program.insert(program.begin() + commands_addr->second + 2, { "JUMP", else_addr->second - commands_addr->second + 1 });
+    return new std::pair<int, int>(start, program.size() - 1);
+}
+
+std::pair<int, int> *_while_stmt(int cond_addr, int commands_addr) {
+    // TODO: finish
+    int start = program.size() - 1;
     program.insert(program.begin() + cond_addr + 1, { "JUMP", commands_addr - cond_addr + 2 });
     program.insert(program.begin() + commands_addr + 2, { "JUMP", cond_addr - commands_addr - 4 });
-    return program.size() - 1;
+    return new std::pair<int, int>(start, program.size() - 1);
 }
 
-int _repeat_stmt(int commands_addr, int cond_addr) {
+std::pair<int, int> *_repeat_stmt(int commands_addr, int cond_addr) {
+    // TODO: finish
     int start = program.size();
-    std::cout << commands_addr << "\n";
-    std::cout << cond_addr << "\n";
     program.insert(program.begin() + cond_addr + 1, { "JUMP", -cond_addr });
-    return program.size() - 1;
+    return new std::pair<int, int>(start, program.size() - 1);
 }
 
-int _for_stmt(const std::string& var, int start, int end, int commands_addr) {
+std::pair<int, int> *_for_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr) {
+    int size = program.size() - 1;
+    int i_addr = _declare(var, SCALAR, 0, 0);
 
+    if (start->address == -1) { 
+        program.insert(program.begin() + commands_addr->first - 1, { "SET", start->value });
+        program.insert(program.begin() + commands_addr->first, { "STORE", i_addr });
+    } 
+    else {
+        program.insert(program.begin() + commands_addr->first - 1, { "LOAD", start->address });
+        program.insert(program.begin() + commands_addr->first, { "STORE", i_addr });
+    }
+    
+    if (end->address == -1) {       
+        program.insert(program.begin() + commands_addr->first + 1, { "SET", end->value });  
+        program.insert(program.begin() + commands_addr->first + 2, { "SUB", i_addr });
+    } else {    
+        program.insert(program.begin() + commands_addr->first + 1, { "LOAD", end->address });                               
+        program.insert(program.begin() + commands_addr->first + 2, { "SUB", i_addr });
+    }
+
+    program.insert(program.begin() + commands_addr->first + 3, { "JNEG", commands_addr->second});
+
+    std::cout << commands_addr->first << " " << commands_addr->second << "\n";
+
+    program.insert(program.begin() + commands_addr->second + 1, { "SET", 1 });
+    program.insert(program.begin() + commands_addr->second + 2, { "ADD", i_addr });
+    program.insert(program.begin() + commands_addr->second + 3, { "STORE", i_addr });
+
+    program.emplace_back("JUMP", -10);
+
+    return new std::pair<int, int>(size, program.size() - 1);
 }
 
-int _for_dec_stmt(const std::string& var, int start, int end, int commands_addr) {
-
+std::pair<int, int> * _for_dec_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr) {
+    // TODO: finish
 }
 
 std::pair<int, int> *_eq(Entity* a, Entity* b) {
@@ -168,47 +220,158 @@ std::pair<int, int> *_eq(Entity* a, Entity* b) {
     return new std::pair<int, int>(program.size() - 1, NONE); // Return pointer to the program instruction with jump
 }
 
-int _neq(int a, int b) {
-    program.emplace_back("LOAD", a);
-    program.emplace_back("SUB", b);
-    program.emplace_back("JZERO", 2); 
-    program.emplace_back("JUMP", 2);
+std::pair<int, int> * _neq(Entity* a, Entity* b) {
+    if (a->address == -1 && b->address == -1) {
+        if (a->value != b->value) {
+            return new std::pair<int, int>(program.size() - 1, TRUE); // always true, dont put the condition
+        }
+        else {
+            return new std::pair<int, int>(program.size() - 1, FALSE); // always false, remove code block after condition
+        }
+    }
 
-    return program.size() - 1; // Return pointer to the program instruction with jump
+    if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JZERO", 2); 
+        program.emplace_back("JUMP", 2);
+    }
+    else if (a->address != -1 && b->address == -1) {
+        program.emplace_back("SET", b->value);
+        program.emplace_back("SUB", a->address);
+        program.emplace_back("JZERO", 2); 
+        program.emplace_back("JUMP", 2);
+    }
+    else {
+        program.emplace_back("LOAD", a->address);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JZERO", 2);
+        program.emplace_back("JUMP", 2);
+    }
+
+    return new std::pair<int, int>(program.size() - 1, NONE); 
 }
 
-int _gt(int a, int b) {
-    program.emplace_back("LOAD", a);
-    program.emplace_back("SUB", b);
-    program.emplace_back("JPOS", 2); 
+std::pair<int, int> * _gt(Entity* a, Entity* b) {
+    if (a->address == -1 && b->address == -1) {
+        if (a->value > b->value) {
+            return new std::pair<int, int>(program.size() - 1, TRUE); // always true, dont put the condition
+        }
+        else {
+            return new std::pair<int, int>(program.size() - 1, FALSE); // always false, remove code block after condition
+        }
+    }
 
-    return program.size() - 1; // Return pointer to the program instruction with jump
+    if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JPOS", 2); 
+    }
+    else if (a->address != -1 && b->address == -1) {
+        program.emplace_back("SET", b->value);
+        program.emplace_back("SUB", a->address);
+        program.emplace_back("JPOS", 2); 
+    }
+    else {
+        program.emplace_back("LOAD", a->address);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JPOS", 2);
+    } 
+
+    return new std::pair<int, int>(program.size() - 1, NONE); 
 }
 
-int _le(int a, int b) {
-    program.emplace_back("LOAD", a);
-    program.emplace_back("SUB", b);
-    program.emplace_back("JNEG", 2); 
+std::pair<int, int> * _le(Entity* a, Entity* b) {
+    if (a->address == -1 && b->address == -1) {
+        if (a->value < b->value) {
+            return new std::pair<int, int>(program.size() - 1, TRUE); // always true, dont put the condition
+        }
+        else {
+            return new std::pair<int, int>(program.size() - 1, FALSE); // always false, remove code block after condition
+        }
+    }
 
-    return program.size() - 1; // Return pointer to the program instruction with jump
+    if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JNEG", 2); 
+    }
+    else if (a->address != -1 && b->address == -1) {
+        program.emplace_back("SET", b->value);
+        program.emplace_back("SUB", a->address);
+        program.emplace_back("JNEG", 2); 
+    }
+    else {
+        program.emplace_back("LOAD", a->address);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JNEG", 2);
+    }
+
+    return new std::pair<int, int>(program.size() - 1, NONE); 
 }
 
-int _geq(int a, int b) {
-    program.emplace_back("LOAD", a);
-    program.emplace_back("SUB", b);
-    program.emplace_back("JPOS", 3); 
-    program.emplace_back("JZERO", 2);
+std::pair<int, int> * _geq(Entity* a, Entity* b) {
+    if (a->address == -1 && b->address == -1) {
+        if (a->value >= b->value) {
+            return new std::pair<int, int>(program.size() - 1, TRUE); // always true, dont put the condition
+        }
+        else {
+            return new std::pair<int, int>(program.size() - 1, FALSE); // always false, remove code block after condition
+        }
+    }
 
-    return program.size() - 1; // Return pointer to the program instruction with jump
+    if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JPOS", 3); 
+        program.emplace_back("JZERO", 2);
+    }
+    else if (a->address != -1 && b->address == -1) {
+        program.emplace_back("SET", b->value);
+        program.emplace_back("SUB", a->address);
+        program.emplace_back("JPOS", 3); 
+        program.emplace_back("JZERO", 2);
+    }
+    else {
+        program.emplace_back("LOAD", a->address);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JPOS", 3);
+        program.emplace_back("JZERO", 2);
+    }
+
+    return new std::pair<int, int>(program.size() - 1, NONE); 
 }
 
-int _leq(int a, int b) {
-    program.emplace_back("LOAD", a);
-    program.emplace_back("SUB", b);
-    program.emplace_back("JNEG", 3); 
-    program.emplace_back("JZERO", 2);
+std::pair<int, int> * _leq(Entity* a, Entity* b) {
+    if (a->address == -1 && b->address == -1) {
+        if (a->value <= b->value) {
+            return new std::pair<int, int>(program.size() - 1, TRUE); // always true, dont put the condition
+        }
+        else {
+            return new std::pair<int, int>(program.size() - 1, FALSE); // always false, remove code block after condition
+        }
+    }
 
-    return program.size() - 1; // Return pointer to the program instruction with jump
+    if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JNEG", 3); 
+        program.emplace_back("JZERO", 2);
+    }
+    else if (a->address != -1 && b->address == -1) {
+        program.emplace_back("SET", b->value);
+        program.emplace_back("SUB", a->address);
+        program.emplace_back("JNEG", 3); 
+        program.emplace_back("JZERO", 2);
+    }
+    else {
+        program.emplace_back("LOAD", a->address);
+        program.emplace_back("SUB", b->address);
+        program.emplace_back("JNEG", 3);
+        program.emplace_back("JZERO", 2);
+    }
+
+    return new std::pair<int, int>(program.size() - 1, NONE); 
 }
 
 int _load(Entity _entity) {
@@ -530,6 +693,10 @@ int allocate_register() {
     // }
     std::cout << "allocated: " << next_free_register << "\n";
     return next_free_register++;
+}
+
+int get_size() {
+    return program.size();
 }
 
 void free_register(int reg) {

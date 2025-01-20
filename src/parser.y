@@ -21,7 +21,7 @@ extern bool local;
 %union {
     long long   llval;              // For numbers
     char*       strval;             // For identifiers
-    int         address;
+    std::pair<int, int> *address;   // <start, end> pointers to commands
     std::pair<int, int> *_condition;
     Entity      *_entity;
 }
@@ -95,7 +95,7 @@ command :
         $$ = _if_else_stmt($2, $4, $6);
     }
     | IF condition THEN commands ENDIF {
-        //$$ = _if_stmt($2, $4);
+        $$ = _if_stmt($2, $4);
     }
     | WHILE condition DO commands ENDWHILE {
         //$$ = _while_stmt($2, $4);
@@ -104,7 +104,7 @@ command :
         //$$ = _repeat_stmt($2, $4);
     }
     | FOR pidentifier FROM value TO value DO commands ENDFOR {
-        //$$ = _for_stmt($2, $4, $6, $8);
+        $$ = _for_stmt($2, $4, $6, $8);
     }
     | FOR pidentifier FROM value DOWNTO value DO commands ENDFOR {
         //$$ = _for_dec_stmt($2, $4, $6, $8);
@@ -191,19 +191,19 @@ condition :
         $$ = _eq($1, $3); // Return pointer to the instruction with { JUMP -1 }, 1 if always true, 0 if always false
     }
     | value NEQ value {
-        //$$ = _neq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        $$ = _neq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value GT value { 
-        //$$ = _gt($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        $$ = _gt($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value LE value {
-        //$$ = _le($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        $$ = _le($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value GEQ value {
-        //$$ = _geq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        $$ = _geq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value LEQ value {
-        //$$ = _leq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        $$ = _leq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
 ;
 
