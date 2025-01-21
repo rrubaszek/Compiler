@@ -11,10 +11,21 @@ enum symbol {
     ARRAY
 };
 
+struct instruction {
+	std::string opcode;
+	std::optional<int> operand;
+
+	instruction(std::string opcode, std::optional<int> operand = std::nullopt) : 
+	opcode(std::move(opcode)),
+	operand(operand) 
+	{}
+};
+
 struct Entity {
 	int value;
 	int address;
 	std::string name;
+	std::vector<instruction> program;
 
 	Entity(int value, int address, std::string name) :
 	value(value),
@@ -29,16 +40,6 @@ struct symbol_entry {
 	int value;
 	int a;
 	int b;    
-};
-
-struct instruction {
-	std::string opcode;
-	std::optional<int> operand;
-
-	instruction(std::string opcode, std::optional<int> operand = std::nullopt) : 
-	opcode(std::move(opcode)),
-	operand(operand) 
-	{}
 };
 
 struct argument {
@@ -65,10 +66,12 @@ int get_variable_value(const std::string& name);
 int allocate_register();
 void free_register(int reg);
 
+void _append_to_main_program(Entity* e);
+
 void _put_halt();
-std::pair<int, int>* _assign(const std::string& var, Entity* _entity);
-std::pair<int, int>* _read(const std::string& var);
-std::pair<int, int>* _write(int address);
+Entity* _assign(const std::string& var, Entity* _entity);
+Entity* _read(const std::string& var);
+Entity* _write(int address);
 
 void _put_rtrn();
 void _procedure_head(const std::string& name);
@@ -77,11 +80,11 @@ void _declare_local(const std::string& name, symbol type, int a, int b);
 void _declare_arguments(const std::string& name, symbol type);
 void _call_procedure();
 
-std::pair<int, int>* _if_stmt(const std::pair<int, int>* cond_addr, 
-                            const std::pair<int, int>* commands_addr);
-std::pair<int, int>* _if_else_stmt(const std::pair<int, int>* cond_addr, 
-								const std::pair<int, int>* commands_addr, 
-								const std::pair<int, int>* else_addr);
+Entity* _if_stmt(const std::pair<int, int>* cond_addr, 
+                Entity* commands_addr);
+Entity* _if_else_stmt(const std::pair<int, int>* cond_addr, 
+					Entity* commands_addr, 
+					Entity* else_addr);
 std::pair<int, int>* _while_stmt(int cond_addr, int commands_addr);
 std::pair<int, int>* _repeat_stmt(int commands_addr, int cond_addr);
 std::pair<int, int>* _for_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr);

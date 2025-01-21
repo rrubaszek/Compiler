@@ -36,11 +36,10 @@ extern bool local;
 %token <strval> pidentifier 
 %token <llval> num
 
-%type <address> commands command
 %type <_condition> condition
 %type <strval> declarations identifier
-%type <_entity> value expression 
-
+%type <_entity> value expression commands command 
+ 
 %left '-' '+'
 %left '*' '/'
 %right '^'
@@ -80,9 +79,11 @@ main :
 
 commands : 
     commands command {
+        _append_to_main_program($2);
         $$ = $2;
     }
     | command {
+        _append_to_main_program($1);
         $$ = $1;
     }
 ;
@@ -92,7 +93,7 @@ command :
         $$ = _assign($1, $3);
     }
     | IF condition THEN commands ELSE commands ENDIF {
-        $$ = _if_else_stmt($2, $4, $6);
+        //$$ = _if_else_stmt($2, $4, $6);
     }
     | IF condition THEN commands ENDIF {
         $$ = _if_stmt($2, $4);
@@ -104,7 +105,7 @@ command :
         //$$ = _repeat_stmt($2, $4);
     }
     | FOR pidentifier FROM value TO value DO commands ENDFOR {
-        $$ = _for_stmt($2, $4, $6, $8);
+        //$$ = _for_stmt($2, $4, $6, $8);
     }
     | FOR pidentifier FROM value DOWNTO value DO commands ENDFOR {
         //$$ = _for_dec_stmt($2, $4, $6, $8);
