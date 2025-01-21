@@ -23,16 +23,15 @@ void _put_rtrn() {
     program.emplace_back("RTRN", 1);
 }
 
-std::pair<int, int>* _assign(const std::string& var, Entity* _entity) {
-    int start = program.size() - 1;
-    if (_entity->name == "") {
-        program.emplace_back("SET", _entity->value);
+std::pair<int, int>* _assign(const std::string& var, Entity* e) {
+    if (e->name == "") {
+        program.emplace_back("SET", e->value);
         program.emplace_back("STORE", get_variable_address(var));
     }
     else {
         program.emplace_back("STORE", get_variable_address(var));
     }
-    return new std::pair<int, int>(start, program.size() - 1);
+    return new std::pair<int, int>(e->start_block_address, program.size() - 1);
 }
 
 std::pair<int, int> *_read(const std::string& var) {
@@ -41,10 +40,9 @@ std::pair<int, int> *_read(const std::string& var) {
     return new std::pair<int, int>(start, program.size() - 1);
 }
 
-std::pair<int, int> *_write(int address) {
-    int start = program.size() - 1;
-    program.emplace_back("PUT", address);
-    return new std::pair<int, int>(start, program.size() - 1);
+std::pair<int, int> *_write(Entity* e) {
+    program.emplace_back("PUT", e->address);
+    return new std::pair<int, int>(e->start_block_address, program.size() - 1);
 }
 
 void _procedure_head(const std::string& name) {
@@ -155,34 +153,34 @@ std::pair<int, int> *_repeat_stmt(int commands_addr, int cond_addr) {
 
 std::pair<int, int> *_for_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr) {
     int size = program.size() - 1;
-    int i_addr = _declare(var, SCALAR, 0, 0);
+    int i_addr = 100;
 
     if (start->address == -1) { 
-        program.insert(program.begin() + commands_addr->first - 1, { "SET", start->value });
-        program.insert(program.begin() + commands_addr->first, { "STORE", i_addr });
+        program.insert(program.begin() + commands_addr->first, { "SET", start->value });
+        program.insert(program.begin() + commands_addr->first + 1, { "STORE", i_addr });
     } 
     else {
-        program.insert(program.begin() + commands_addr->first - 1, { "LOAD", start->address });
-        program.insert(program.begin() + commands_addr->first, { "STORE", i_addr });
+        program.insert(program.begin() + commands_addr->first, { "LOAD", start->address });
+        program.insert(program.begin() + commands_addr->first + 1, { "STORE", i_addr });
     }
     
     if (end->address == -1) {       
-        program.insert(program.begin() + commands_addr->first + 1, { "SET", end->value });  
-        program.insert(program.begin() + commands_addr->first + 2, { "SUB", i_addr });
+        program.insert(program.begin() + commands_addr->first + 2, { "SET", end->value });  
+        program.insert(program.begin() + commands_addr->first + 3, { "SUB", i_addr });
     } else {    
-        program.insert(program.begin() + commands_addr->first + 1, { "LOAD", end->address });                               
-        program.insert(program.begin() + commands_addr->first + 2, { "SUB", i_addr });
+        program.insert(program.begin() + commands_addr->first + 2, { "LOAD", end->address });                               
+        program.insert(program.begin() + commands_addr->first + 3, { "SUB", i_addr });
     }
-
-    program.insert(program.begin() + commands_addr->first + 3, { "JNEG", commands_addr->second});
 
     std::cout << commands_addr->first << " " << commands_addr->second << "\n";
 
-    program.insert(program.begin() + commands_addr->second + 1, { "SET", 1 });
-    program.insert(program.begin() + commands_addr->second + 2, { "ADD", i_addr });
-    program.insert(program.begin() + commands_addr->second + 3, { "STORE", i_addr });
+    program.insert(program.begin() + commands_addr->first + 4, { "JNEG", commands_addr->second - commands_addr->first + 6});
 
-    program.emplace_back("JUMP", -10);
+    program.insert(program.begin() + commands_addr->second + 6, { "SET", 1 });
+    program.insert(program.begin() + commands_addr->second + 7, { "ADD", i_addr });
+    program.insert(program.begin() + commands_addr->second + 8, { "STORE", i_addr });
+
+    program.emplace_back("JUMP", commands_addr->first - commands_addr->second - 7);
 
     return new std::pair<int, int>(size, program.size() - 1);
 }
@@ -379,61 +377,75 @@ int _load(Entity _entity) {
     return _entity.address;
 }
 
-Entity* _add(Entity* _entity_l, Entity* _entity_r) {
-    if (_entity_l->address == -1 && _entity_r->address == -1) {
-        //program.emplace_back("SET", _entity_l->value + _entity_r->value);
-        return new Entity(_entity_l->value + _entity_r->value, -1, "");
+Entity* _add(Entity* a, Entity* b) {
+    Entity* e = new Entity(-1, -1, "temp");
+    e->start_block_address = program.size();
+    if (a->address == -1 && b->address == -1) {
+        //program.emplace_back("SET", a->value + b->value);
+        e->value = a->value + b->value;
+        return e;
     }
-    else if (_entity_l->address == -1 && _entity_r->address != -1) {
-        program.emplace_back("SET", _entity_l->value);
-        program.emplace_back("ADD", _entity_r->address);
+    else if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
+        program.emplace_back("ADD", b->address);
     }
-    else if (_entity_r->address == -1 && _entity_l->address != -1) {
-        program.emplace_back("SET", _entity_r->value);
-        program.emplace_back("ADD", _entity_l->address);
-    }
-    else {
-        program.emplace_back("LOAD", _entity_l->address);
-        program.emplace_back("ADD", _entity_r->address);
-    }
-    return new Entity(-1, -1, "temp");
-}
-
-Entity* _sub(Entity* _entity_l, Entity* _entity_r) {
-    if (_entity_l->address == -1 && _entity_r->address == -1) {
-        return new Entity(_entity_l->value - _entity_r->value, -1, "");
-    }
-    else if (_entity_l->address == -1 && _entity_r->address != -1) {
-        program.emplace_back("SET", _entity_l->value);
-        program.emplace_back("SUB", _entity_r->address);
-    }
-    else if (_entity_r->address == -1 && _entity_l->address != -1) {
-        program.emplace_back("SET", _entity_r->value);
-        program.emplace_back("SUB", _entity_l->address);
+    else if (b->address == -1 && a->address != -1) {
+        program.emplace_back("SET", b->value);
+        program.emplace_back("ADD", a->address);
     }
     else {
-        program.emplace_back("LOAD", _entity_l->address);
-        program.emplace_back("SUB", _entity_r->address);
+        program.emplace_back("LOAD", a->address);
+        program.emplace_back("ADD", b->address);
     }
-    return new Entity(-1, -1, "temp");
+    return e;
 }
 
-Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
-    int a_addr = _entity_l->address;
-    int b_addr = _entity_r->address;
-
-    if (_entity_l->address == -1 && _entity_r->address == -1) {
-        return new Entity(_entity_l->value * _entity_r->value, -1, "");
+Entity* _sub(Entity* a, Entity* b) {
+    Entity* e = new Entity(-1, -1, "temp");
+    e->start_block_address = program.size();
+    if (a->address == -1 && b->address == -1) {
+        e->value = a->value - b->value;
+        return e;
     }
+    else if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
+        program.emplace_back("SUB", b->address);
+    }
+    else if (b->address == -1 && a->address != -1) {
+        program.emplace_back("SET", b->value);
+        program.emplace_back("SUB", a->address);
+    }
+    else {
+        program.emplace_back("LOAD", a->address);
+        program.emplace_back("SUB", b->address);
+    }
+    return e;
+}
+
+Entity* _mul(Entity* a, Entity* b) {
+    Entity* e = new Entity(-1, -1, "temp");
+    e->start_block_address = program.size();
+
+    if (a->address == -1 && b->address == -1) {
+        e->value = a->value * b->value;
+        return e;
+    }
+
+    int a_addr = allocate_register();
+    int b_addr = allocate_register();
+
+    program.emplace_back("LOAD", a->address);
+    program.emplace_back("STORE", a_addr);
+
+    program.emplace_back("LOAD", b->address);
+    program.emplace_back("STORE", b_addr);
 
     // Entities has values only when they are constants (address is -1)
-    if (_entity_l->address == -1 && _entity_r->address != -1) {
-        program.emplace_back("SET", _entity_l->value);
-        a_addr = allocate_register();
+    if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
         program.emplace_back("STORE", a_addr);
-    } else if (_entity_r->address == -1 && _entity_l->address != -1) {
-        program.emplace_back("SET", _entity_r->value);
-        b_addr = allocate_register();
+    } else if (b->address == -1 && a->address != -1) {
+        program.emplace_back("SET", b->value);
         program.emplace_back("STORE", b_addr);
     }
 
@@ -506,32 +518,43 @@ Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
 
     free_register(sign_addr);
     free_register(result_addr);
+    free_register(a_addr);
+    free_register(b_addr);
 
-    return new Entity(-1, -1, "temp");
+    return e;
 }
 
-Entity* _div(Entity* _entity_l, Entity* _entity_r) {
-    if (_entity_r->address == -1 && _entity_r->value == 2) {
-        program.emplace_back("LOAD", _entity_l->address); 
+Entity* _div(Entity* a, Entity* b) {
+    Entity* e = new Entity(-1, -1, "temp");
+    e->start_block_address = program.size();
+
+    if (b->address == -1 && b->value == 2) {
+        program.emplace_back("LOAD", a->address); 
         program.emplace_back("HALF");
-        return new Entity(-1, -1, "temp");
+        return e;
     }
 
-    int a_addr = _entity_l->address;
-    int b_addr = _entity_r->address;
-
     // Entities has value only for constants
-    if (_entity_l->address == -1 && _entity_r->address == -1) {
-        return new Entity(_entity_l->value / _entity_r->value, -1, "");
+    if (a->address == -1 && b->address == -1) {
+        e->value = a->value / b->value;
+        return e;
     } 
-    else if (_entity_l->address == -1 && _entity_r->address != -1) {
-        program.emplace_back("SET", _entity_l->value);
-        a_addr = allocate_register();
+
+    int a_addr = allocate_register();
+    int b_addr = allocate_register();
+
+    program.emplace_back("LOAD", a->address);
+    program.emplace_back("STORE", a_addr);
+
+    program.emplace_back("LOAD", b->address);
+    program.emplace_back("STORE", b_addr);
+    
+    if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
         program.emplace_back("STORE", a_addr);
     } 
-    else if (_entity_r->address == -1 && _entity_l->address != -1) {
-        program.emplace_back("SET", _entity_r->value);
-        b_addr = allocate_register();
+    else if (b->address == -1 && a->address != -1) {
+        program.emplace_back("SET", b->value);
         program.emplace_back("STORE", b_addr);
     }
 
@@ -633,31 +656,37 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
     free_register(quotient_addr);
     free_register(remainder_addr);
     free_register(divisor_sign);
+    free_register(a_addr);
+    free_register(b_addr);
 
-    return new Entity(-1, -1, "temp");
+    return e;
 }
 
-Entity* _mod(Entity* _entity_l, Entity* _entity_r) {
-    int a_addr = _entity_l->address;
-    int b_addr = _entity_r->address;
+Entity* _mod(Entity* a, Entity* b) {
+    Entity* e = new Entity(-1, -1, "temp");
+    e->start_block_address = program.size(); 
 
-    if (_entity_l->address == -1 && _entity_r->address == -1) {
-        return new Entity(_entity_l->value % _entity_r->value, -1, "");
+    int a_addr = a->address;
+    int b_addr = b->address;
+
+    if (a->address == -1 && b->address == -1) {
+        e->value = a->value % b->value;
+        return e;
     }
 
-    if (_entity_l->address == -1 && _entity_r->address != -1) {
-        program.emplace_back("SET", _entity_l->value);
+    if (a->address == -1 && b->address != -1) {
+        program.emplace_back("SET", a->value);
         a_addr = allocate_register();
         program.emplace_back("STORE", a_addr);
-    } else if (_entity_r->address == -1 && _entity_l->address != -1) {
-        program.emplace_back("SET", _entity_r->value);
+    } else if (b->address == -1 && a->address != -1) {
+        program.emplace_back("SET", b->value);
         b_addr = allocate_register();
         program.emplace_back("STORE", b_addr);
     }
 
     // TODO: Implement rest of the modulo logic
 
-    return new Entity(-1, -1, "temp");
+    return e;
 }
 
 int get_variable_address(const std::string& name) {

@@ -21,7 +21,7 @@ extern bool local;
 %union {
     long long   llval;              // For numbers
     char*       strval;             // For identifiers
-    std::pair<int, int> *address;   // <start, end> pointers to commands
+    std::pair<int, int> *_address;   // <start, end> pointers to commands
     std::pair<int, int> *_condition;
     Entity      *_entity;
 }
@@ -36,7 +36,7 @@ extern bool local;
 %token <strval> pidentifier 
 %token <llval> num
 
-%type <address> commands command
+%type <_address> commands command
 %type <_condition> condition
 %type <strval> declarations identifier
 %type <_entity> value expression 
@@ -80,10 +80,10 @@ main :
 
 commands : 
     commands command {
-        $$ = $2;
+        $$ = new std::pair<int, int>($1->first, $2->second);
     }
     | command {
-        $$ = $1;
+        $$ = new std::pair<int, int>($1->first, $1->second);
     }
 ;
 
@@ -114,7 +114,7 @@ command :
         $$ = _read($2);
     }
     | WRITE value ';'{
-        $$ = _write($2->address);
+        $$ = _write($2);
     }
 ;
 

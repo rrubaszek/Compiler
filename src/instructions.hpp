@@ -14,6 +14,7 @@ enum symbol {
 struct Entity {
 	int value;
 	int address;
+	int start_block_address;
 	std::string name;
 
 	Entity(int value, int address, std::string name) :
@@ -66,9 +67,9 @@ int allocate_register();
 void free_register(int reg);
 
 void _put_halt();
-std::pair<int, int>* _assign(const std::string& var, Entity* _entity);
+std::pair<int, int>* _assign(const std::string& var, Entity* e);
 std::pair<int, int>* _read(const std::string& var);
-std::pair<int, int>* _write(int address);
+std::pair<int, int>* _write(Entity* e);
 
 void _put_rtrn();
 void _procedure_head(const std::string& name);
@@ -94,8 +95,8 @@ std::pair<int, int>* _le(Entity* a, Entity* b);
 std::pair<int, int>* _geq(Entity* a, Entity* b);
 std::pair<int, int>* _leq(Entity* a, Entity* b);
 
-Entity* _add(Entity* _entity_l, Entity* _entity_r);
-Entity* _sub(Entity* _entity_l, Entity* _entity_r);
-Entity* _mul(Entity* _entity_l, Entity* _entity_r);
-Entity* _div(Entity* _entity_l, Entity* _entity_r);
-Entity* _mod(Entity* _entity_l, Entity* _entity_r);
+Entity* _add(Entity* a, Entity* b);
+Entity* _sub(Entity* a, Entity* b);
+Entity* _mul(Entity* a, Entity* b);
+Entity* _div(Entity* a, Entity* b);
+Entity* _mod(Entity* a, Entity* b);
