@@ -109,20 +109,28 @@ void _call_procedure(const std::string& name) {
     // program.emplace_back("CALL", proc_address); // Jump to procedure
 }
 
-Entity* _if_stmt(const std::pair<int, int>* cond_addr, Entity* commands_addr) {
+Entity* _if_stmt(Entity* cond_addr, Entity* commands_addr) {
     Entity* entity = new Entity(-1, -1, "");
-    if (cond_addr->second == TRUE) {
-        for (instruction i : commands_addr->program) {
-            entity->program.emplace_back(i.opcode, i.operand);
-        }
-        return entity;
-    }
+    // if (cond_addr->name == "TRUE") {
+    //     for (instruction i : commands_addr->program) {
+    //         entity->program.emplace_back(i.opcode, i.operand);
+    //     }
+    //     return entity;
+    // }
 
-    if (cond_addr->second == FALSE) {
-        return entity;
-    }
+    // if (cond_addr->second == FALSE) {
+    //     return entity;
+    // }
 
-    entity->program.emplace_back("JUMP", )
+    for (instruction i : cond_addr->program) {
+        entity->program.emplace_back(i.opcode, i.operand);
+    }
+    
+    entity->program.emplace_back("JUMP", 2);
+
+    for (instruction i : commands_addr->program) {
+        entity->program.emplace_back(i.opcode, i.operand);
+    }
     //program.insert(program.begin() + cond_addr->first + 1, { "JUMP", commands_addr->second - cond_addr->first + 1 });
     // for (instruction i : commands_addr->program) {
     //         entity->program.emplace_back(i.opcode, i.operand);
@@ -204,33 +212,34 @@ std::pair<int, int> * _for_dec_stmt(const std::string& var, Entity* start, Entit
     // TODO: finish
 }
 
-std::pair<int, int> *_eq(Entity* a, Entity* b) {
+Entity* _eq(Entity* a, Entity* b) {
     if (a->address == -1 && b->address == -1) {
         if (a->value == b->value) {
-            return new std::pair<int, int>(program.size() - 1, TRUE); // always true, dont put the condition
+            return new Entity(-1, -1, "TRUE"); // always true, dont put the condition
         }
         else {
-            return new std::pair<int, int>(program.size() - 1, FALSE); // always false, remove code block after condition
+            return new Entity(-1, -1, "FALSE"); // always false, remove code block after condition
         }
     }
 
+    Entity* e = new Entity(-1, -1, "NONE");
     if (a->address == -1 && b->address != -1) {
-        program.emplace_back("SET", a->value);
-        program.emplace_back("SUB", b->address);
-        program.emplace_back("JZERO", 2);
+        e->program.emplace_back("SET", a->value);
+        e->program.emplace_back("SUB", b->address);
+        e->program.emplace_back("JZERO", 2);
     }
     else if (a->address != -1 && b->address == -1) {
-        program.emplace_back("SET", b->value);
-        program.emplace_back("SUB", a->address);
-        program.emplace_back("JZERO", 2);
+        e->program.emplace_back("SET", b->value);
+        e->program.emplace_back("SUB", a->address);
+        e->program.emplace_back("JZERO", 2);
     }
     else {
-        program.emplace_back("LOAD", a->address);
-        program.emplace_back("SUB", b->address);
-        program.emplace_back("JZERO", 2);
+        e->program.emplace_back("LOAD", a->address);
+        e->program.emplace_back("SUB", b->address);
+        e->program.emplace_back("JZERO", 2);
     }
 
-    return new std::pair<int, int>(program.size() - 1, NONE); // Return pointer to the program instruction with jump
+    return e;
 }
 
 std::pair<int, int> * _neq(Entity* a, Entity* b) {

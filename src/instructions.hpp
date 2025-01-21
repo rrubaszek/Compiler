@@ -80,8 +80,7 @@ void _declare_local(const std::string& name, symbol type, int a, int b);
 void _declare_arguments(const std::string& name, symbol type);
 void _call_procedure();
 
-Entity* _if_stmt(const std::pair<int, int>* cond_addr, 
-                Entity* commands_addr);
+Entity* _if_stmt(Entity* cond_addr, Entity* commands_addr);
 Entity* _if_else_stmt(const std::pair<int, int>* cond_addr, 
 					Entity* commands_addr, 
 					Entity* else_addr);
@@ -90,7 +89,7 @@ std::pair<int, int>* _repeat_stmt(int commands_addr, int cond_addr);
 std::pair<int, int>* _for_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr);
 std::pair<int, int>* _for_dec_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr);
 
-std::pair<int, int>* _eq(Entity* a, Entity* b);
+Entity* _eq(Entity* a, Entity* b);
 std::pair<int, int>* _neq(Entity* a, Entity* b);
 std::pair<int, int>* _gt(Entity* a, Entity* b);
 std::pair<int, int>* _le(Entity* a, Entity* b);

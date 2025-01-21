@@ -36,9 +36,9 @@ extern bool local;
 %token <strval> pidentifier 
 %token <llval> num
 
-%type <_condition> condition
+
 %type <strval> declarations identifier
-%type <_entity> value expression commands command 
+%type <_entity> value expression commands command condition
  
 %left '-' '+'
 %left '*' '/'
@@ -69,7 +69,6 @@ procedures :
 
 main : 
     PROGRAM IS declarations _BEGIN commands END {
-        std::cout << "main\n";
         local = false;
     }
     | PROGRAM IS _BEGIN commands END {
@@ -90,13 +89,18 @@ commands :
 
 command :
     identifier ASSIGN expression ';' {
-        $$ = _assign($1, $3);
+        Entity* comm = _assign($1, $3);
+        //_append_to_main_program(comm);
+        $$ = comm;
     }
     | IF condition THEN commands ELSE commands ENDIF {
         //$$ = _if_else_stmt($2, $4, $6);
     }
     | IF condition THEN commands ENDIF {
-        $$ = _if_stmt($2, $4);
+        Entity* comm = _if_stmt($2, $4);
+        //_append_to_main_program($2);
+        //_append_to_main_program(comm);
+        $$ = comm;
     }
     | WHILE condition DO commands ENDWHILE {
         //$$ = _while_stmt($2, $4);
@@ -110,12 +114,18 @@ command :
     | FOR pidentifier FROM value DOWNTO value DO commands ENDFOR {
         //$$ = _for_dec_stmt($2, $4, $6, $8);
     }
-    | proc_call ';'
+    | proc_call ';' {
+
+    }
     | READ identifier ';' {
-        $$ = _read($2);
+        Entity* comm = _read($2);
+        //_append_to_main_program(comm);
+        $$ = comm;
     }
     | WRITE value ';'{
-        $$ = _write($2->address);
+        Entity* comm = _write($2->address);
+        //_append_to_main_program(comm);
+        $$ = comm;
     }
 ;
 
@@ -192,19 +202,19 @@ condition :
         $$ = _eq($1, $3); // Return pointer to the instruction with { JUMP -1 }, 1 if always true, 0 if always false
     }
     | value NEQ value {
-        $$ = _neq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _neq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value GT value { 
-        $$ = _gt($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _gt($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value LE value {
-        $$ = _le($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _le($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value GEQ value {
-        $$ = _geq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _geq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
     | value LEQ value {
-        $$ = _leq($1, $3); // Return pointer to the instruction with { JUMP -1 }
+        //$$ = _leq($1, $3); // Return pointer to the instruction with { JUMP -1 }
     }
 ;
 
