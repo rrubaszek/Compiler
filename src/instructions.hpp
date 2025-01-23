@@ -1,14 +1,21 @@
 #pragma once 
 
+#include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <stack>
+#include <memory>
 
-enum symbol {
-    SCALAR,
-    ARRAY
+struct instruction {
+	std::string opcode;
+	int operand;
+
+	instruction(const std::string& opcode, int operand) : 
+	opcode(opcode),
+	operand(operand) 
+	{}
 };
 
 struct Entity {
@@ -16,6 +23,7 @@ struct Entity {
 	int address;
 	int start_block_address;
 	std::string name;
+	std::vector<instruction> program;
 
 	Entity(int value, int address, std::string name) :
 	value(value),
@@ -24,71 +32,40 @@ struct Entity {
 	{}
 };
 
-struct symbol_entry {    
-    symbol type; 	
+struct symbol_entry {   
 	int address;
-	int value;
-	int a;
-	int b;    
-};
-
-struct instruction {
-	std::string opcode;
-	std::optional<int> operand;
-
-	instruction(std::string opcode, std::optional<int> operand = std::nullopt) : 
-	opcode(std::move(opcode)),
-	operand(operand) 
-	{}
-};
-
-struct argument {
-    std::string name;  // Argument name
-    symbol type;  // Argument type (optional, e.g., "int", "float", "")
-
-	argument(std::string name, symbol type) :
-	name(std::move(name)),
-	type(type)
-	{}
-};
-
-struct Procedure {
-    std::string name;
-    int start_address;    // Address of the procedure's first instruction
+	int size;   
 };
 
 extern std::vector<instruction> program;
 extern std::unordered_map<std::string, symbol_entry> global_symbol_table;
+extern std::stack<std::unordered_map<std::string, symbol_entry>> local_symbol_stack;
+
+extern bool is_local;
+extern int next_free_register;
+
+symbol_entry* find_symbol(const std::string& name);
+void add_symbol(const std::string& name, int address, int size, bool is_local);
 
 int get_size();
 int get_variable_address(const std::string& name);
-int get_variable_value(const std::string& name);
 int allocate_register();
 void free_register(int reg);
 
-void _put_halt();
-std::pair<int, int>* _assign(const std::string& var, Entity* e);
-std::pair<int, int>* _read(const std::string& var);
-std::pair<int, int>* _write(Entity* e);
+Entity* _assign(const std::string& var, Entity* _entity);
+Entity* _read(const std::string& var);
+Entity* _write(int address);
 
-void _put_rtrn();
-void _procedure_head(const std::string& name);
-int _declare(const std::string& name, symbol type, int a, int b);
-void _declare_local(const std::string& name, symbol type, int a, int b);
-void _declare_arguments(const std::string& name, symbol type);
-void _call_procedure();
-
-std::pair<int, int>* _if_stmt(const std::pair<int, int>* cond_addr, 
-                            const std::pair<int, int>* commands_addr);
-std::pair<int, int>* _if_else_stmt(const std::pair<int, int>* cond_addr, 
-								const std::pair<int, int>* commands_addr, 
-								const std::pair<int, int>* else_addr);
+Entity* _if_stmt(Entity* cond_addr, Entity* commands_addr);
+Entity* _if_else_stmt(const std::pair<int, int>* cond_addr, 
+					Entity* commands_addr, 
+					Entity* else_addr);
 std::pair<int, int>* _while_stmt(int cond_addr, int commands_addr);
 std::pair<int, int>* _repeat_stmt(int commands_addr, int cond_addr);
 std::pair<int, int>* _for_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr);
 std::pair<int, int>* _for_dec_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr);
 
-std::pair<int, int>* _eq(Entity* a, Entity* b);
+Entity* _eq(Entity* a, Entity* b);
 std::pair<int, int>* _neq(Entity* a, Entity* b);
 std::pair<int, int>* _gt(Entity* a, Entity* b);
 std::pair<int, int>* _le(Entity* a, Entity* b);
