@@ -1,10 +1,12 @@
 #pragma once 
 
+#include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <stack>
+#include <memory>
 
 enum symbol {
     SCALAR,

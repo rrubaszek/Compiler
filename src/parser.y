@@ -1,5 +1,17 @@
 %{
 #include "instructions.hpp"
+#include "Node.hpp"
+#include "ArgsNode.hpp"
+#include "CommandsNode.hpp"
+#include "CommandNode.hpp"
+#include "DeclarationsNode.hpp"
+#include "ExpressionNode.hpp"
+#include "IdentifierNode.hpp"
+#include "MainNode.hpp"
+#include "ValueNode.hpp"
+#include "ProcedureNode.hpp"
+#include "ProgramNode.hpp"
+
 #include "parser.tab.hpp"
 
 #include <stdio.h>
@@ -21,9 +33,14 @@ extern bool local;
 %union {
     long long   llval;              // For numbers
     char*       strval;             // For identifiers
-    std::pair<int, int> *address;   // <start, end> pointers to commands
-    std::pair<int, int> *_condition;
-    Entity      *_entity;
+    MainNode*   main_node;
+    ProcedureNode* procedure_node;
+    CommandsNode*  commands_node;
+    CommandNode*   command_node;
+    DeclarationsNode* dec_node;
+    ExpressionNode* expr_node;
+    ValueNode*     num_node;
+    IdentifierNode* id_node;
 }
 
 %token PROGRAM PROCEDURE IS _BEGIN END
@@ -36,9 +53,14 @@ extern bool local;
 %token <strval> pidentifier 
 %token <llval> num
 
-
-%type <strval> declarations identifier
-%type <_entity> value expression commands command condition
+%type <main_node> main
+%type <procedure_node> procedures proc_head
+%type <dec_node> declarations
+%type <commands_node> commands
+%type <command_node> command
+%type <expr_node> expression
+%type <num_node> value
+%type <id_node> identifier
  
 %left '-' '+'
 %left '*' '/'
@@ -50,124 +72,157 @@ extern bool local;
 
 program_all : 
     procedures main {
-        _put_halt();
+        ProgramNode* node = new ProgramNode();
+        
+        if ($1 != nullptr)
+            node->procedures.push_back($1);
+
+        node->main = $2;
+        node->compile();
+        //_put_halt();
     }
 ;
 
 procedures :   
     procedures PROCEDURE proc_head IS declarations _BEGIN commands END {
-        std::cout << "procedure\n";
-        local = true;
-        _put_rtrn();
+        ProcedureNode* node = new ProcedureNode();
+        node->name = $3->name;
+        node->args = $3->args;
+        node->declarations = $5;
+        node->commands = $7;
+        $$ = node;
     }
     | procedures PROCEDURE proc_head IS _BEGIN commands END {
-        local = true;
-        _put_rtrn();
+        ProcedureNode* node = new ProcedureNode();
+        node->name = $3->name;
+        node->args = $3->args;
+        node->commands = $6;
+        $$ = node;
     }
-    | /* empty */
+    | {
+        $$ = nullptr;
+    }
 ;
 
 main : 
     PROGRAM IS declarations _BEGIN commands END {
-        local = false;
+        MainNode* node = new MainNode();
+        node->declarations = $3;
+        node->commands = $5;
+        $$ = node;
     }
     | PROGRAM IS _BEGIN commands END {
-        local = false;
+        MainNode* node = new MainNode();
+        node->commands = $4;
+        $$ = node;
     }
 ;
 
 commands : 
     commands command {
-        _append_to_main_program($2);
-        $$ = $2;
+        $1->commands.push_back($2);
+        $$ = $1;
     }
     | command {
-        _append_to_main_program($1);
-        $$ = $1;
+        CommandsNode* node = new CommandsNode();
+        node->commands.push_back($1);
+        $$ = node;
     }
 ;
 
 command :
     identifier ASSIGN expression ';' {
-        Entity* comm = _assign($1, $3);
-        //_append_to_main_program(comm);
-        $$ = comm;
+        CommandNode* node = new CommandNode();
+        node->type = CommandNode::ASSIGN;
+        $$ = node;
     }
     | IF condition THEN commands ELSE commands ENDIF {
-        //$$ = _if_else_stmt($2, $4, $6);
+        CommandNode* node = new CommandNode();
+        node->type = CommandNode::IF_ELSE;
+        $$ = node;
     }
     | IF condition THEN commands ENDIF {
-        Entity* comm = _if_stmt($2, $4);
-        //_append_to_main_program($2);
-        //_append_to_main_program(comm);
-        $$ = comm;
+        CommandNode* node = new CommandNode();
+        node->type = CommandNode::IF;
+        $$ = node;
     }
     | WHILE condition DO commands ENDWHILE {
-        //$$ = _while_stmt($2, $4);
+        CommandNode* node = new CommandNode();
+        node->type = CommandNode::WHILE;
+        $$ = node;
     }
     | REPEAT commands UNTIL condition ';' {
-        //$$ = _repeat_stmt($2, $4);
+        CommandNode* node = new CommandNode();
+        node->type = CommandNode::REPEAT;
+        $$ = node;
     }
     | FOR pidentifier FROM value TO value DO commands ENDFOR {
-        //$$ = _for_stmt($2, $4, $6, $8);
+        CommandNode* node = new CommandNode();
+        node->type = CommandNode::FOR;
+        $$ = node;
     }
     | FOR pidentifier FROM value DOWNTO value DO commands ENDFOR {
-        //$$ = _for_dec_stmt($2, $4, $6, $8);
+        CommandNode* node = new CommandNode();
+        node->type = CommandNode::FOR_REV;
+        $$ = node;
     }
     | proc_call ';' {
-
+        CommandNode* node = new CommandNode();
+        node->type = CommandNode::PROC_CALL;
+        $$ = node;
     }
     | READ identifier ';' {
-        Entity* comm = _read($2);
-        //_append_to_main_program(comm);
-        $$ = comm;
+        CommandNode* node = new CommandNode();
+        node->type = CommandNode::READ;
+        $$ = node;
     }
     | WRITE value ';'{
-        Entity* comm = _write($2->address);
-        //_append_to_main_program(comm);
-        $$ = comm;
+        CommandNode* node = new CommandNode();
+        node->type = CommandNode::WRITE;
+        $$ = node;
     }
 ;
 
 proc_head :
     pidentifier '(' args_decl ')' {
-        _procedure_head($1);
     }
 ;
 
 proc_call :
     pidentifier '(' args ')' {
-
     }
 ;
 
 declarations :
     declarations ',' pidentifier {
-        _declare($3, SCALAR, 0, 0);
+        $1->variables.push_back($3);
+        $$ = $1;
     }
     | declarations ',' pidentifier '[' num ':' num ']' { 
-        _declare($3, ARRAY, $5, $7);
+        
     }
     | pidentifier {
-        _declare($1, SCALAR, 0, 0);
+        DeclarationsNode* node = new DeclarationsNode();
+        node->variables.push_back($1);
+        $$ = node;
     }
     | pidentifier '[' num ':' num ']' { 
-        _declare($1, ARRAY, $3, $5);
+        
     }
 ;
 
 args_decl :
     args_decl ',' pidentifier {
-        _declare_arguments($3, SCALAR);
+        
     }
     | args_decl ',' T pidentifier {
-        _declare_arguments($4, ARRAY);
+        
     }
     | pidentifier {
-        _declare_arguments($1, SCALAR);
+        
     }
     | T pidentifier {
-        _declare_arguments($2, ARRAY);
+       
     }
 ;
 
@@ -178,28 +233,31 @@ args :
 
 expression : 
     value { 
-        $$ = $1;
+        ExpressionNode* node = new ExpressionNode();
+        //node->type = ExpressionNode::Number;
+        //node->value = $1->value;
+        $$ = node;
     }
     | value '+' value {
-        $$ = _add($1, $3);
+        //$$ = _add($1, $3);
     }
     | value '-' value {
-        $$ = _sub($1, $3);
+        //$$ = _sub($1, $3);
     }
     | value '*' value { 
-        $$ = _mul($1, $3);
+        //$$ = _mul($1, $3);
     }
     | value '/' value { 
-        $$ = _div($1, $3);
+       // $$ = _div($1, $3);
     }
     | value '%' value { 
-        $$ = _mod($1, $3);
+        //$$ = _mod($1, $3);
     }
 ;
 
 condition :
     value EQ value {
-        $$ = _eq($1, $3); // Return pointer to the instruction with { JUMP -1 }, 1 if always true, 0 if always false
+        //$$ = _eq($1, $3); // Return pointer to the instruction with { JUMP -1 }, 1 if always true, 0 if always false
     }
     | value NEQ value {
         //$$ = _neq($1, $3); // Return pointer to the instruction with { JUMP -1 }
@@ -220,22 +278,34 @@ condition :
 
 value :
     num {
-        $$ = new Entity($1, -1, "");
+        ValueNode* node = new ValueNode();
+        node->value = $1;
+        $$ = node;
     }
     | '-' num {
-        $$ = new Entity(-$2, -1, "");
+        ValueNode* node = new ValueNode();
+        node->value = -$2;
+        $$ = node;
     }
     | identifier {
-        $$ = new Entity(-1, get_variable_address($1), $1);
+        ValueNode* node = new ValueNode();
+        node->name = $1->name;
+        $$ = node;
     }
 ;
 
 identifier :    
     pidentifier {
-        $$ = $1;
+        IdentifierNode* node = new IdentifierNode();
+        node->name = $1;
+        $$ = node;
     }
-    | pidentifier '[' pidentifier ']'
-    | pidentifier '[' num ']'
+    | pidentifier '[' pidentifier ']' {
+
+    }
+    | pidentifier '[' num ']' {
+
+    }
 ;
 
 %%

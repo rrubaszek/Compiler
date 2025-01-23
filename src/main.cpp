@@ -1,4 +1,17 @@
 #include "instructions.hpp"
+
+#include "Node.hpp"
+#include "ArgsNode.hpp"
+#include "CommandsNode.hpp"
+#include "CommandNode.hpp"
+#include "DeclarationsNode.hpp"
+#include "ExpressionNode.hpp"
+#include "IdentifierNode.hpp"
+#include "MainNode.hpp"
+#include "ValueNode.hpp"
+#include "ProcedureNode.hpp"
+#include "ProgramNode.hpp"
+
 #include "parser.tab.hpp"
 
 #include <cstdio>

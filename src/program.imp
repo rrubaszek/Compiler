@@ -1,11 +1,11 @@
 PROGRAM IS
   a,b,c
 BEGIN
-  a := 5;
-  b := 6;
-  FOR i FROM 1 TO 10 DO
-    a := a + 1;
-  ENDFOR
+  a := 1024;
+  b := 2;
+    FOR i FROM 1 TO 12 DO
+     a := a * a;
+    ENDFOR
   WRITE a;
 END
 
@@ -13,18 +13,24 @@ END
 #STORE 1
 #SET 6
 #STORE 2
+
 #SET 1
 #STORE 4
+
 #SET 10
 #SUB 4
 #JNEG 8
-#SET 1
-#ADD 1
-#STORE 1
+
 #SET 1
 #ADD 4
 #STORE 4
+
+#SET 1
+#ADD 1
+#STORE 1
+
 #JUMP -9
+
 #PUT 1
 #HALT 
 
