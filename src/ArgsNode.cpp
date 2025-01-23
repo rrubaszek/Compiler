@@ -1,4 +1,5 @@
 #include "ArgsNode.hpp"
+#include "instructions.hpp"
 
 void ArgsNode::compile() {
     for (auto& arg : args) {

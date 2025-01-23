@@ -1,4 +1,5 @@
 #include "ValueNode.hpp"
+#include "instructions.hpp"
 
 void ValueNode::compile() {
     if (value)

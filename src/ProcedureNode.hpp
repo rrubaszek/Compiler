@@ -7,7 +7,7 @@
 class ProcedureNode : public Node {
 public:
     std::string name;
-    std::vector<std::string> args;
+    std::vector<std::pair<std::string, bool>> args;
     DeclarationsNode* declarations;
     CommandsNode* commands;
 

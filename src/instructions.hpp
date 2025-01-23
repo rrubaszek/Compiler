@@ -8,17 +8,12 @@
 #include <stack>
 #include <memory>
 
-enum symbol {
-    SCALAR,
-    ARRAY
-};
-
 struct instruction {
 	std::string opcode;
-	std::optional<int> operand;
+	int operand;
 
-	instruction(std::string opcode, std::optional<int> operand = std::nullopt) : 
-	opcode(std::move(opcode)),
+	instruction(const std::string& opcode, int operand) : 
+	opcode(opcode),
 	operand(operand) 
 	{}
 };
@@ -36,51 +31,29 @@ struct Entity {
 	{}
 };
 
-struct symbol_entry {    
-    symbol type; 	
+struct symbol_entry {   
 	int address;
-	int value;
-	int a;
-	int b;    
-};
-
-struct argument {
-    std::string name;  // Argument name
-    symbol type;  // Argument type (optional, e.g., "int", "float", "")
-
-	argument(std::string name, symbol type) :
-	name(std::move(name)),
-	type(type)
-	{}
-};
-
-struct Procedure {
-    std::string name;
-    int start_address;    // Address of the procedure's first instruction
+	int size;   
 };
 
 extern std::vector<instruction> program;
 extern std::unordered_map<std::string, symbol_entry> global_symbol_table;
+extern std::stack<std::unordered_map<std::string, symbol_entry>> local_symbol_stack;
+
+extern bool is_local;
+extern int next_free_register;
+
+symbol_entry* find_symbol(const std::string& name);
+void add_symbol(const std::string& name, int address, int size, bool is_local);
 
 int get_size();
 int get_variable_address(const std::string& name);
-int get_variable_value(const std::string& name);
 int allocate_register();
 void free_register(int reg);
 
-void _append_to_main_program(Entity* e);
-
-void _put_halt();
 Entity* _assign(const std::string& var, Entity* _entity);
 Entity* _read(const std::string& var);
 Entity* _write(int address);
-
-void _put_rtrn();
-void _procedure_head(const std::string& name);
-int _declare(const std::string& name, symbol type, int a, int b);
-void _declare_local(const std::string& name, symbol type, int a, int b);
-void _declare_arguments(const std::string& name, symbol type);
-void _call_procedure();
 
 Entity* _if_stmt(Entity* cond_addr, Entity* commands_addr);
 Entity* _if_else_stmt(const std::pair<int, int>* cond_addr, 

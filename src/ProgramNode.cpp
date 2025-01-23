@@ -1,4 +1,5 @@
 #include "ProgramNode.hpp"
+#include "instructions.hpp"
 
 void ProgramNode::compile() {
     // Kod kompilacji dla programu

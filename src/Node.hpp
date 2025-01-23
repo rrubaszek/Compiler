@@ -4,11 +4,13 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
+#include <stack>
+
+#include "instructions.hpp"
 
 class Node {
 public:
-    std::string name;
-
     virtual ~Node() {}
     virtual void compile() = 0;
 };

@@ -8,26 +8,41 @@
 #define NONE 2
 
 std::unordered_map<std::string, symbol_entry> global_symbol_table;
+std::stack<std::unordered_map<std::string, symbol_entry>> local_symbol_stack;
 std::vector<instruction> program;
 
-static int next_free_register = 1;
-bool local = false;
+int next_free_register = 1;
+bool is_local = false;
 
 void yyerror(const char *s);
 
-void _put_halt() {
-    program.emplace_back("HALT");
+symbol_entry* find_symbol(const std::string& name) {
+    if (!local_symbol_stack.empty()) {
+        auto& local_symbols = local_symbol_stack.top();
+        auto it = local_symbols.find(name);
+        if (it != local_symbols.end()) {
+            return &it->second;
+        }
+    }
+
+    auto it = global_symbol_table.find(name);
+    if (it != global_symbol_table.end()) {
+        return &it->second;
+    }
+    return nullptr; 
 }
 
-void _put_rtrn() {
-    program.emplace_back("RTRN", 1);
-}
-
-void _append_to_main_program(Entity* e) {
-    for (instruction i : e->program) {
-        program.emplace_back(i.opcode, i.operand);
+void add_symbol(const std::string& name, int address, int size, bool is_local) {
+    symbol_entry symbol = {address, size};
+    if (is_local) {
+        local_symbol_stack.top()[name] = symbol;
+        std::cout << name << " " << address << "\n";
+    } else {
+        global_symbol_table[name] = symbol;
+        std::cout << name << " " << address << "\n";
     }
 }
+
 
 Entity* _assign(const std::string& var, Entity* e) {
     Entity* entity = new Entity(-1, -1, "");
@@ -51,62 +66,6 @@ Entity* _write(int address) {
     Entity* entity = new Entity(-1, -1, "");
     entity->program.emplace_back("PUT", address);
     return entity;
-}
-
-void _procedure_head(const std::string& name) {
-    // Procedure proc;
-    // proc.name = name;
-    // proc.start_address = program.size(); // Address placeholder
-    // procedure_table[name] = proc;
-    // std::cout << procedure_table[name].name << "\n";
-
-    // for (int i = 0; i < proc_symbol_table.size(); ++i) {
-    //     global_symbol_table[proc_symbol_table[i].name] = {proc_symbol_table[i].type, 0, 0, 0}; // Example: map name to location
-    // }
-
-    // proc_symbol_table.clear();
-}
-
-int _declare(const std::string& name, symbol type, int a, int b) {
-    if(!local) {
-        if (global_symbol_table.count(name) == 0) {
-            int var_register = allocate_register();
-            symbol_entry entry = { type, var_register, 0, a, b };  // basic value is 0
-            global_symbol_table[name] = entry;
-            std::cout << "Dodano do pamięci zmienną: " << name << "\n";
-            return var_register;
-        }
-        else {
-            yyerror("Variable redeclaration");
-        }
-    } 
-
-    return 0;
-    // else {
-    //     if (local_symbol_table.count(name) == 0) {
-    //         int var_register = allocate_register();
-    //         symbol_entry entry = { type, var_register, a, b };  
-    //         local_symbol_table[name] = entry;
-    //         std::cout << "Dodano do pamięci zmienną lokalna: " << name << "\n";
-    //     }
-    //     else {
-    //         yyerror("Variable redeclaration");
-    //     }
-    // }
-}
-
-void _declare_arguments(const std::string& name, symbol type) {
-    //proc_symbol_table.emplace_back(name, type);
-}
-
-void _call_procedure(const std::string& name) {
-    // if (procedure_table.find(name) == procedure_table.end()) {
-    //     yyerror("Undefined procedure\n");
-    // }
-
-    // // Generate JUMP to procedure
-    // int proc_address = procedure_table[name].start_address;
-    // program.emplace_back("CALL", proc_address); // Jump to procedure
 }
 
 Entity* _if_stmt(Entity* cond_addr, Entity* commands_addr) {
@@ -176,7 +135,7 @@ std::pair<int, int> *_repeat_stmt(int commands_addr, int cond_addr) {
 
 std::pair<int, int> *_for_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr) {
     int size = program.size() - 1;
-    int i_addr = _declare(var, SCALAR, 0, 0);
+    int i_addr = 100;
 
     if (start->address == -1) { 
         program.insert(program.begin() + commands_addr->first - 1, { "SET", start->value });
@@ -494,7 +453,7 @@ Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
     int check_parity = allocate_register();
 
     program.emplace_back("LOAD", b_addr);
-    program.emplace_back("HALF");
+    program.emplace_back("HALF", -1);
     program.emplace_back("STORE", check_parity); 
     program.emplace_back("LOAD", check_parity);
     program.emplace_back("ADD", check_parity);
@@ -509,7 +468,7 @@ Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("STORE", result_addr);
 
     program.emplace_back("LOAD", b_addr);
-    program.emplace_back("HALF");
+    program.emplace_back("HALF", -1);
     program.emplace_back("STORE", b_addr);
 
     program.emplace_back("LOAD", a_addr);
@@ -535,7 +494,7 @@ Entity* _mul(Entity* _entity_l, Entity* _entity_r) {
 Entity* _div(Entity* _entity_l, Entity* _entity_r) {
     if (_entity_r->address == -1 && _entity_r->value == 2) {
         program.emplace_back("LOAD", _entity_l->address); 
-        program.emplace_back("HALF");
+        program.emplace_back("HALF", -1);
         return new Entity(-1, -1, "temp");
     }
 
@@ -608,10 +567,10 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
 
     // Redo b and temp to the previous values
     program.emplace_back("LOAD", b_addr);
-    program.emplace_back("HALF");
+    program.emplace_back("HALF", -1);
     program.emplace_back("STORE", b_addr);
     program.emplace_back("LOAD", temp_addr);
-    program.emplace_back("HALF");
+    program.emplace_back("HALF", -1);
     program.emplace_back("STORE", temp_addr);
 
     // Main loop
@@ -628,10 +587,10 @@ Entity* _div(Entity* _entity_l, Entity* _entity_r) {
     program.emplace_back("STORE", quotient_addr);
 
     program.emplace_back("LOAD", b_addr);
-    program.emplace_back("HALF");
+    program.emplace_back("HALF", -1);
     program.emplace_back("STORE", b_addr);
     program.emplace_back("LOAD", temp_addr);
-    program.emplace_back("HALF");
+    program.emplace_back("HALF", -1);
     program.emplace_back("STORE", temp_addr);
     program.emplace_back("JUMP", -15);
 
@@ -696,15 +655,6 @@ int get_variable_address(const std::string& name) {
     }
 }
 
-int get_variable_value(const std::string& name) {
-    if (global_symbol_table.find(name) != global_symbol_table.end()) {
-        return global_symbol_table[name].value;
-    } 
-    else {
-        yyerror(("Undefined variable: " + name).c_str());
-        exit(1);
-    }
-}
 
 int allocate_register() {
     // if (!free_registers.empty()) {

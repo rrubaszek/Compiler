@@ -1,21 +1,25 @@
 #pragma once 
 
 #include "Node.hpp"
+#include "ValueNode.hpp"
 
 class ExpressionNode : public Node {
 public:
     int value;
-    enum ExpressionType { ADD, SUB, MUL, DIV };
+    enum ExpressionType { VALUE, ADD, SUB, MUL, DIV, MOD };
     ExpressionType type;
-    std::unique_ptr<ExpressionNode> left;
-    std::unique_ptr<ExpressionNode> right;
+    
+    ValueNode* left;
+    ValueNode* right;
 
     ExpressionNode() = default;
     void compile() override;
 
 private:
-    void compile_add() {}
-    void compile_sub() {}
-    void compile_mul() {}
-    void compile_div() {}
+    void compile_value();
+    void compile_add();
+    void compile_sub();
+    void compile_mul();
+    void compile_div();
+    void compile_mod();
 };

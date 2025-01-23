@@ -4,6 +4,7 @@
 #include "ArgsNode.hpp"
 #include "CommandsNode.hpp"
 #include "CommandNode.hpp"
+#include "ConditionNode.hpp"
 #include "DeclarationsNode.hpp"
 #include "ExpressionNode.hpp"
 #include "IdentifierNode.hpp"
@@ -47,13 +48,14 @@ int main(int argc, char* argv[]) {
         if (outfile.is_open()) {
             for (const auto& [command, value] : program) { // TODO: maybe check if can be improved/cleaned-up
                 outfile << command << " ";
-                if (value.has_value()) 
-                    outfile << value.value();
+                if (value != -1) 
+                    outfile << value;
                 outfile << "\n";
             }
         
+            outfile << "HALT";
             outfile.close();
-            std::cout << "Parsing result saved to output.txt\n";
+            std::cout << "Parsing result saved to output.mr\n";
         } 
         else {
             std::cerr << "Error: Could not open file for writing\n";

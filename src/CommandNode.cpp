@@ -1,4 +1,6 @@
 #include "CommandNode.hpp"
+#include "CommandsNode.hpp"
+#include "instructions.hpp"
 
 void CommandNode::compile() {
     switch (type) {
@@ -16,15 +18,40 @@ void CommandNode::compile() {
 }
 
 void CommandNode::compile_assign() {
-    std::cout << "Compile assign\n";
+    auto& m_data = std::get<AssignData>(data);
+    m_data.right->compile(); 
+    program.emplace_back("STORE", find_symbol(m_data.left->name)->address);  
 }
 
 void CommandNode::compile_if_else() {
-    std::cout << "Compile if else\n";
+    auto& m_data = std::get<IfElseData>(data);
+
+    m_data.condition->compile(); 
+    int jumpToElseIndex = program.size();
+    program.emplace_back("JUMP", -1);
+
+    m_data.then_branch->compile();  // Kompilacja bloku THEN
+    int jumpToEndIfIndex = program.size();
+    program.emplace_back("JUMP", -1);
+
+    int elseIndex = program.size();
+    program[jumpToElseIndex].operand = elseIndex - jumpToElseIndex;
+
+    m_data.else_branch->compile();  // Kompilacja bloku ELSE
+    int endIfIndex = program.size();
+    program[jumpToEndIfIndex].operand = endIfIndex - jumpToEndIfIndex;
 }
 
 void CommandNode::compile_if() {
-    std::cout << "Compile if\n";
+    auto& m_data = std::get<IfData>(data);
+
+    m_data.condition->compile(); 
+    int jumpToEndIfIndex = program.size();
+    program.emplace_back("JUMP", -1);
+
+    m_data.then_branch->compile(); 
+    int endIfIndex = program.size();
+    program[jumpToEndIfIndex].operand = endIfIndex - jumpToEndIfIndex;
 }
 
 void CommandNode::compile_while() {
@@ -48,9 +75,11 @@ void CommandNode::compile_proc_call() {
 }
 
 void CommandNode::compile_read() {
-    std::cout << "Compile read\n";
+    auto& m_data = std::get<ReadData>(data);
+    program.emplace_back("GET", find_symbol(m_data.target->name)->address);
 }
 
 void CommandNode::compile_write() {
-    std::cout << "Compile write\n";
+    auto& m_data = std::get<WriteData>(data);
+    program.emplace_back("PUT", find_symbol(m_data.value->name)->address);
 }

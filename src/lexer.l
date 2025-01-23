@@ -8,6 +8,7 @@
 #include "ArgsNode.hpp"
 #include "CommandsNode.hpp"
 #include "CommandNode.hpp"
+#include "ConditionNode.hpp"
 #include "DeclarationsNode.hpp"
 #include "ExpressionNode.hpp"
 #include "IdentifierNode.hpp"
