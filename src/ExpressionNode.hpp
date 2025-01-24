@@ -5,7 +5,6 @@
 
 class ExpressionNode : public Node {
 public:
-    int value;
     enum ExpressionType { VALUE, ADD, SUB, MUL, DIV, MOD };
     ExpressionType type;
     

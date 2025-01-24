@@ -194,7 +194,7 @@ command:
         CommandNode* node = new CommandNode();
         node->type = CommandNode::FOR_REV;
         CommandNode::ForRevData data;
-        data.loop_variable = $2;   
+        data.loop_variable = std::string($2);   
         data.start_value = $4;    
         data.end_value = $6;     
         data.loop_body = $8;     
@@ -276,21 +276,23 @@ declarations :
 
 args_decl :
     args_decl ',' pidentifier {
-        $1->push_back(std::make_pair($3, false)); // false oznacza, że to zmienna
+        $1->push_back(std::make_pair($3, false)); 
         $$ = $1;
     }
     | args_decl ',' T pidentifier {
-        $1->push_back(std::make_pair($4, true)); // true oznacza, że to tablica
+        DeclarationsNode::ArrayDeclarations node;
+        node.name = $4;
+        $1->push_back(std::make_pair($4, true)); 
         $$ = $1;
     }
     | pidentifier {
         std::vector<std::pair<std::string, bool>>* args = new std::vector<std::pair<std::string, bool>>();
-        args->push_back(std::make_pair($1, false)); // false oznacza zmienną
+        args->push_back(std::make_pair($1, false)); 
         $$ = args;
     }
-    | T pidentifier '[' num ':' num ']' {
+    | T pidentifier {
         std::vector<std::pair<std::string, bool>>* args = new std::vector<std::pair<std::string, bool>>();
-        args->push_back(std::make_pair($2, true)); // true oznacza tablicę
+        args->push_back(std::make_pair($2, true));
         $$ = args;
     }
 ;
@@ -311,7 +313,7 @@ expression :
     value { 
         ExpressionNode* node = new ExpressionNode();
         node->type = ExpressionNode::ExpressionType::VALUE;
-        node->value = $1->value;
+        node->left = $1;
         $$ = node;
     }
     | value '+' value {
@@ -322,7 +324,11 @@ expression :
         $$ = node;
     }
     | value '-' value {
-        //$$ = _sub($1, $3);
+        ExpressionNode* node = new ExpressionNode();
+        node->type = ExpressionNode::ExpressionType::SUB;
+        node->left = $1;
+        node->right = $3;
+        $$ = node;
     }
     | value '*' value { 
         //$$ = _mul($1, $3);
@@ -384,16 +390,25 @@ value :
     num {
         ValueNode* node = new ValueNode();
         node->value = $1;
+        node->type = ValueNode::ValueType::CONSTANT;
         $$ = node;
     }
     | '-' num {
         ValueNode* node = new ValueNode();
         node->value = -$2;
+        node->type = ValueNode::ValueType::CONSTANT;
         $$ = node;
     }
     | identifier {
         ValueNode* node = new ValueNode();
         node->name = $1->name;
+        node->type = ValueNode::ValueType::VARIABLE;
+
+        if ($1->is_array) {
+            node->type = ValueNode::ValueType::ARRAY_ELEMENT;
+            node->index_name = $1->index_name;
+            node->index_value = $1->index_value;
+        }
         $$ = node;
     }
 ;
@@ -405,10 +420,18 @@ identifier :
         $$ = node;
     }
     | pidentifier '[' pidentifier ']' {
-
+        IdentifierNode* node = new IdentifierNode();
+        node->name = $1;
+        node->is_array = true;
+        node->index_name = $3;
+        $$ = node;
     }
     | pidentifier '[' num ']' {
-
+        IdentifierNode* node = new IdentifierNode();
+        node->name = $1;
+        node->is_array = true;
+        node->index_value = $3;
+        $$ = node;
     }
 ;
 

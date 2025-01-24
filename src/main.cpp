@@ -48,8 +48,9 @@ int main(int argc, char* argv[]) {
         if (outfile.is_open()) {
             for (const auto& [command, value] : program) { // TODO: maybe check if can be improved/cleaned-up
                 outfile << command << " ";
-                if (value != -1) 
-                    outfile << value;
+                // if (value != -1) 
+                //     
+                outfile << value;
                 outfile << "\n";
             }
         

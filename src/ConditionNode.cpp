@@ -2,6 +2,7 @@
 #include "instructions.hpp"
 
 void ConditionNode::compile()  {
+    std::cout << type << "\n";
     switch (type) {
         case EQ: compile_eq(); break;
         case NEQ: compile_neq(); break;
@@ -13,7 +14,7 @@ void ConditionNode::compile()  {
 }
 
 void ConditionNode::compile_eq() {
-    if (left->name == "" && right->name == "") {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
         if (left->value == right->value) {
             res = TRUE;
         }
@@ -23,27 +24,31 @@ void ConditionNode::compile_eq() {
         return;
     }
 
-    if (left->name == "" && right->name != "") {
+    if (left->type ==  ValueNode::ValueType::CONSTANT && right->type ==  ValueNode::ValueType::VARIABLE) {
         program.emplace_back("SET", left->value);
         program.emplace_back("SUB", find_symbol(right->name)->address);
         program.emplace_back("JZERO", 2);
         return;
     }
     
-    if (left->name != "" && right->name == "") {
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::CONSTANT) {
         program.emplace_back("SET", right->value);
         program.emplace_back("SUB", find_symbol(left->name)->address);
         program.emplace_back("JZERO", 2);
         return;
     }
-    
-    program.emplace_back("LOAD", find_symbol(left->name)->address);
-    program.emplace_back("SUB", find_symbol(right->name)->address);
+
+    right->compile();
+    int temp = allocate_register();
+    program.emplace_back("STORE", temp);
+    left->compile();
+    program.emplace_back("SUB", temp);
     program.emplace_back("JZERO", 2);
+    free_register(temp);    
 }
 
 void ConditionNode::compile_neq() {
-    if (left->name == "" && right->name == "") {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
         if (left->value != right->value) {
             res = TRUE;
         }
@@ -53,7 +58,7 @@ void ConditionNode::compile_neq() {
         return;
     }
 
-    if (left->name == "" && right->name != "") {
+    if (left->type ==  ValueNode::ValueType::CONSTANT && right->type ==  ValueNode::ValueType::VARIABLE) {
         program.emplace_back("SET", left->value);
         program.emplace_back("SUB", find_symbol(right->name)->address);
         program.emplace_back("JZERO", 2);
@@ -61,23 +66,27 @@ void ConditionNode::compile_neq() {
         return;
     }
     
-    if (left->name != "" && right->name == "") {
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::CONSTANT) {
         program.emplace_back("SET", right->value);
         program.emplace_back("SUB", find_symbol(left->name)->address);
         program.emplace_back("JZERO", 2);
         program.emplace_back("JUMP", 2);
         return;
     }
-    
-    program.emplace_back("LOAD", find_symbol(left->name)->address);
-    program.emplace_back("SUB", find_symbol(right->name)->address);
+
+    right->compile();
+    int temp = allocate_register();
+    program.emplace_back("STORE", temp);
+    left->compile();
+    program.emplace_back("SUB", temp);
     program.emplace_back("JZERO", 2);
     program.emplace_back("JUMP", 2);
+    free_register(temp);
 }
 
 void ConditionNode::compile_gt() {
-    if (left->name == "" && right->name == "") {
-        if (left->value == right->value) {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
+        if (left->value > right->value) {
             res = TRUE;
         }
         else {
@@ -86,28 +95,32 @@ void ConditionNode::compile_gt() {
         return;
     }
 
-    if (left->name == "" && right->name != "") {
+    if (left->type ==  ValueNode::ValueType::CONSTANT && right->type ==  ValueNode::ValueType::VARIABLE) {
         program.emplace_back("SET", left->value);
         program.emplace_back("SUB", find_symbol(right->name)->address);
         program.emplace_back("JPOS", 2);
         return;
     }
     
-    if (left->name != "" && right->name == "") {
-        program.emplace_back("SET", right->value);;
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::CONSTANT) {
+        program.emplace_back("SET", right->value);
         program.emplace_back("SUB", find_symbol(left->name)->address);
-        program.emplace_back("JPOS", 2);
+        program.emplace_back("JNEG", 2);
         return;
     }
-    
-    program.emplace_back("LOAD ", find_symbol(left->name)->address);
-    program.emplace_back("SUB ", find_symbol(right->name)->address);
-    program.emplace_back("JPOS ", 2);
+
+    right->compile();
+    int temp = allocate_register();
+    program.emplace_back("STORE", temp);
+    left->compile();
+    program.emplace_back("SUB", temp);
+    program.emplace_back("JPOS", 2);
+    free_register(temp); 
 }
 
 void ConditionNode::compile_lt() {
-    if (left->name == "" && right->name == "") {
-        if (left->value == right->value) {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
+        if (left->value < right->value) {
             res = TRUE;
         }
         else {
@@ -116,28 +129,32 @@ void ConditionNode::compile_lt() {
         return;
     }
 
-    if (left->name == "" && right->name != "") {
+    if (left->type ==  ValueNode::ValueType::CONSTANT && right->type ==  ValueNode::ValueType::VARIABLE) {
         program.emplace_back("SET", left->value);
         program.emplace_back("SUB", find_symbol(right->name)->address);
         program.emplace_back("JNEG", 2);
         return;
     }
     
-    if (left->name != "" && right->name == "") {
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::CONSTANT) {
         program.emplace_back("SET", right->value);
         program.emplace_back("SUB", find_symbol(left->name)->address);
-        program.emplace_back("JNEG", 2);
+        program.emplace_back("JPOS", 2);
         return;
     }
-    
-    program.emplace_back("LOAD", find_symbol(left->name)->address);
-    program.emplace_back("SUB", find_symbol(right->name)->address);
+
+    right->compile();
+    int temp = allocate_register();
+    program.emplace_back("STORE", temp);
+    left->compile();
+    program.emplace_back("SUB", temp);
     program.emplace_back("JNEG", 2);
+    free_register(temp); 
 }
 
 void ConditionNode::compile_geq() {
-    if (left->name == "" && right->name == "") {
-        if (left->value == right->value) {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
+        if (left->value >= right->value) {
             res = TRUE;
         }
         else {
@@ -146,7 +163,7 @@ void ConditionNode::compile_geq() {
         return;
     }
 
-    if (left->name == "" && right->name != "") {
+    if (left->type ==  ValueNode::ValueType::CONSTANT && right->type ==  ValueNode::ValueType::VARIABLE) {
         program.emplace_back("SET", left->value);
         program.emplace_back("SUB", find_symbol(right->name)->address);
         program.emplace_back("JPOS", 3);
@@ -154,49 +171,57 @@ void ConditionNode::compile_geq() {
         return;
     }
     
-    if (left->name != "" && right->name == "") {
-        program.emplace_back("SET", right->value);
-        program.emplace_back("SUB",find_symbol(left->name)->address);
-        program.emplace_back("JPOS", 3);
-        program.emplace_back("JZERO", 2);
-        return;
-    }
-    
-    program.emplace_back("LOAD", find_symbol(left->name)->address);
-    program.emplace_back("SUB", find_symbol(right->name)->address);
-    program.emplace_back("JPOS", 3);
-    program.emplace_back("JZERO", 2);
-}
-
-void ConditionNode::compile_leq() {
-    if (left->name == "" && right->name == "") {
-        if (left->value == right->value) {
-            res = TRUE;
-        }
-        else {
-            res = FALSE;
-        }
-        return;
-    }
-
-    if (left->name == "" && right->name != "") {
-        program.emplace_back("SET", left->value);
-        program.emplace_back("SUB", find_symbol(right->name)->address);
-        program.emplace_back("JNEG", 3);
-        program.emplace_back("JZERO", 2);
-        return;
-    }
-    
-    if (left->name != "" && right->name == "") {
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::CONSTANT) {
         program.emplace_back("SET", right->value);
         program.emplace_back("SUB", find_symbol(left->name)->address);
         program.emplace_back("JNEG", 3);
         program.emplace_back("JZERO", 2);
         return;
     }
+
+    right->compile();
+    int temp = allocate_register();
+    program.emplace_back("STORE", temp);
+    left->compile();
+    program.emplace_back("SUB", temp);
+    program.emplace_back("JPOS", 3);
+    program.emplace_back("JZERO", 2);
+    free_register(temp);
+}
+
+void ConditionNode::compile_leq() {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
+        if (left->value <= right->value) {
+            res = TRUE;
+        }
+        else {
+            res = FALSE;
+        }
+        return;
+    }
+
+    if (left->type ==  ValueNode::ValueType::CONSTANT && right->type ==  ValueNode::ValueType::VARIABLE) {
+        program.emplace_back("SET", left->value);
+        program.emplace_back("SUB", find_symbol(right->name)->address);
+        program.emplace_back("JNEG", 3);
+        program.emplace_back("JZERO", 2);
+        return;
+    }
     
-    program.emplace_back("LOAD", find_symbol(left->name)->address);
-    program.emplace_back("SUB", find_symbol(right->name)->address);
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::CONSTANT) {
+        program.emplace_back("SET", right->value);
+        program.emplace_back("SUB", find_symbol(left->name)->address);
+        program.emplace_back("JPOS", 3);
+        program.emplace_back("JZERO", 2);
+        return;
+    }
+
+    right->compile();
+    int temp = allocate_register();
+    program.emplace_back("STORE", temp);
+    left->compile();
+    program.emplace_back("SUB", temp);
     program.emplace_back("JNEG", 3);
     program.emplace_back("JZERO", 2);
+    free_register(temp);
 }

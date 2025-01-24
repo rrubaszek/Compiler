@@ -13,33 +13,62 @@ void ExpressionNode::compile()  {
 }
 
 void ExpressionNode::compile_value() {
-    program.emplace_back("SET", value);
+    left->compile();
     return;
 }
 
 void ExpressionNode::compile_add() {
-    if (left->name == "" && right->name == "") {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
         program.emplace_back("SET", left->value + right->value);
         return;
     }
 
-    if (left->name == "" && right->name != "") {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::VARIABLE) {
        program.emplace_back("SET", left->value);
-       program.emplace_back("ADD", find_symbol(right->name)->address); // Here implement find variable address by name from symbol_table
+       program.emplace_back("ADD", find_symbol(right->name)->address); 
        return;
     }
 
-    if (left->name != "" && right->name == "") {
+    if (left->type == ValueNode::ValueType::VARIABLE && right->type == ValueNode::ValueType::CONSTANT) {
        program.emplace_back("SET", right->value);
-       program.emplace_back("ADD", find_symbol(left->name)->address); // Here implement find variable address by name from symbol_table
+       program.emplace_back("ADD", find_symbol(left->name)->address); 
        return;
     }
 
-    program.emplace_back("LOAD", find_symbol(left->name)->address);
-    program.emplace_back("ADD", find_symbol(right->name)->address);
+    right->compile();
+    int temp = allocate_register();
+    program.emplace_back("STORE", temp);
+    left->compile();
+    program.emplace_back("ADD", temp);
+    free_register(temp);
 }
 
-void ExpressionNode::compile_sub() {}
+void ExpressionNode::compile_sub() {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
+        program.emplace_back("SET", left->value - right->value);
+        return;
+    }
+
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::VARIABLE) {
+       program.emplace_back("SET", left->value);
+       program.emplace_back("SUB", find_symbol(right->name)->address); 
+       return;
+    }
+
+    if (left->type == ValueNode::ValueType::VARIABLE && right->type == ValueNode::ValueType::CONSTANT) {
+       program.emplace_back("SET", -(right->value));
+       program.emplace_back("ADD", find_symbol(left->name)->address); 
+       return;
+    }
+
+    right->compile();
+    int temp = allocate_register();
+    program.emplace_back("STORE", temp);
+    left->compile();
+    program.emplace_back("SUB", temp);
+    free_register(temp);
+
+}
 void ExpressionNode::compile_mul() {}
 void ExpressionNode::compile_div() {}
 void ExpressionNode::compile_mod() {}

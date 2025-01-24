@@ -46,14 +46,14 @@ public:
     };
 
     struct ForData {
-        char* loop_variable;
+        std::string loop_variable;
         ValueNode* start_value;        
         ValueNode* end_value;          
         CommandsNode* loop_body;       
     };
 
     struct ForRevData {
-        char* loop_variable;
+        std::string loop_variable;
         ValueNode* start_value;        
         ValueNode* end_value;          
         CommandsNode* loop_body;       

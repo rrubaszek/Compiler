@@ -9,9 +9,9 @@ void ProcedureNode::compile() {
 
     for (const auto& arg : args) {
         if (arg.second) {
-            std::cout << "ARG_ARRAY " << arg.first << "\n"; // Tablica
+            std::cout << "array " << arg.first << "\n"; // Tablica
         } else {
-            std::cout << "ARG_VAR " << arg.first << "\n"; // Zmienna
+            std::cout << "variable " << arg.first << "\n"; // Zmienna
         }
     }
 
