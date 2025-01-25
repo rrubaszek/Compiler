@@ -10,9 +10,9 @@
 
 struct instruction {
 	std::string opcode;
-	int operand;
+	std::optional<int> operand;
 
-	instruction(const std::string& opcode, int operand) : 
+	instruction(const std::string& opcode, std::optional<int> operand = std::nullopt) : 
 	opcode(opcode),
 	operand(operand) 
 	{}
@@ -34,7 +34,8 @@ struct Entity {
 
 struct symbol_entry {   
 	int address;
-	int zero_address;   
+	int zero_address; 
+	bool is_iterator;  
 };
 
 extern std::vector<instruction> program;
@@ -45,17 +46,12 @@ extern bool is_local;
 extern int next_free_register;
 
 symbol_entry* find_symbol(const std::string& name);
-void add_symbol(const std::string& name, int zero_index, int size, bool is_local);
+void add_symbol(const std::string& name, int zero_index, int size, bool is_local, bool is_iterator);
+void remove_symbol(const std::string& name);
 
 int allocate_register();
 void free_register(int reg);
 
-std::pair<int, int>* _while_stmt(int cond_addr, int commands_addr);
-std::pair<int, int>* _repeat_stmt(int commands_addr, int cond_addr);
-std::pair<int, int>* _for_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr);
-std::pair<int, int>* _for_dec_stmt(const std::string& var, Entity* start, Entity* end, std::pair<int, int>* commands_addr);
-
-Entity* _sub(Entity* a, Entity* b);
 Entity* _mul(Entity* a, Entity* b);
 Entity* _div(Entity* a, Entity* b);
 Entity* _mod(Entity* a, Entity* b);

@@ -331,13 +331,25 @@ expression :
         $$ = node;
     }
     | value '*' value { 
-        //$$ = _mul($1, $3);
+        ExpressionNode* node = new ExpressionNode();
+        node->type = ExpressionNode::ExpressionType::MUL;
+        node->left = $1;
+        node->right = $3;
+        $$ = node;
     }
     | value '/' value { 
-       // $$ = _div($1, $3);
+        ExpressionNode* node = new ExpressionNode();
+        node->type = ExpressionNode::ExpressionType::DIV;
+        node->left = $1;
+        node->right = $3;
+        $$ = node;
     }
     | value '%' value { 
-        //$$ = _mod($1, $3);
+        ExpressionNode* node = new ExpressionNode();
+        node->type = ExpressionNode::ExpressionType::MOD;
+        node->left = $1;
+        node->right = $3;
+        $$ = node;
     }
 ;
 

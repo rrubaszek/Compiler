@@ -20,6 +20,11 @@ void CommandNode::compile() {
 void CommandNode::compile_assign() {
     auto& m_data = std::get<AssignData>(data); 
 
+    if (find_symbol(m_data.left->name)->is_iterator) {
+        std::cout << "Iterator cannot be modified\n";
+        exit(1);
+    }
+
     if (!m_data.left->is_array) {
         m_data.right->compile();
         program.emplace_back("STORE", find_symbol(m_data.left->name)->address);  
@@ -27,21 +32,20 @@ void CommandNode::compile_assign() {
     }
 
     if(m_data.left->is_array) {
-        if (m_data.left->index_value) {
-            int a = find_symbol(m_data.left->name)->zero_address + m_data.left->index_value;
-            m_data.right->compile();
-            program.emplace_back("STORE", a); 
-            return;
-        }
         if (m_data.left->index_name != "") {
             int a = find_symbol(m_data.left->name)->zero_address;
             program.emplace_back("SET", a);
-            program.emplace_back("ADDI", find_symbol(m_data.left->index_name)->address);
+            program.emplace_back("ADD", find_symbol(m_data.left->index_name)->address);
             int temp = allocate_register();
             program.emplace_back("STORE", temp);
             m_data.right->compile();
             program.emplace_back("STOREI", temp);
             free_register(temp);
+        }
+        else {
+            int a = find_symbol(m_data.left->name)->zero_address + m_data.left->index_value;
+            m_data.right->compile();
+            program.emplace_back("STORE", a); 
         }
     }
 }
@@ -117,7 +121,9 @@ void CommandNode::compile_repeat() {
 void CommandNode::compile_for() {
     auto& m_data = std::get<ForData>(data);
 
-    add_symbol(m_data.loop_variable, allocate_register(), 1, false);
+    // Create new scope
+    local_symbol_stack.push({});
+    add_symbol(m_data.loop_variable, allocate_register(), 1, true, true);
     
     m_data.start_value->compile();
     program.emplace_back("STORE", find_symbol(m_data.loop_variable)->address);
@@ -134,12 +140,18 @@ void CommandNode::compile_for() {
     program.emplace_back("STORE", find_symbol(m_data.loop_variable)->address);
 
     program.emplace_back("JUMP", loopBody - program.size());
+
+    // End scope
+    remove_symbol(m_data.loop_variable);
+    local_symbol_stack.pop();
 }
 
 void CommandNode::compile_for_rev() {
     auto& m_data = std::get<ForRevData>(data);
 
-    add_symbol(m_data.loop_variable, allocate_register(), 1, false);
+    // Create new scope
+    local_symbol_stack.push({});
+    add_symbol(m_data.loop_variable, allocate_register(), 1, true, true);
     
     m_data.start_value->compile();
     program.emplace_back("STORE", find_symbol(m_data.loop_variable)->address);
@@ -156,6 +168,10 @@ void CommandNode::compile_for_rev() {
     program.emplace_back("STORE", find_symbol(m_data.loop_variable)->address);
 
     program.emplace_back("JUMP", loopBody - program.size());
+
+    // End scope
+    remove_symbol(m_data.loop_variable);
+    local_symbol_stack.pop();
 }
 
 void CommandNode::compile_proc_call() {
@@ -170,15 +186,10 @@ void CommandNode::compile_read() {
     }
 
     if(m_data.target->is_array) {
-        if (m_data.target->index_value) {
-            int a = find_symbol(m_data.target->name)->zero_address + m_data.target->index_value;
-            program.emplace_back("GET", a); 
-            return;
-        }
         if (m_data.target->index_name != "") {
             int a = find_symbol(m_data.target->name)->zero_address;
             program.emplace_back("SET", a);
-            program.emplace_back("ADDI", find_symbol(m_data.target->index_name)->address);
+            program.emplace_back("ADD", find_symbol(m_data.target->index_name)->address);
             
             int temp = allocate_register();
             program.emplace_back("STORE", temp);
@@ -186,11 +197,30 @@ void CommandNode::compile_read() {
             program.emplace_back("STOREI", temp);
             free_register(temp);
         }
+        else { 
+            int a = find_symbol(m_data.target->name)->zero_address + m_data.target->index_value;
+            program.emplace_back("GET", a); 
+        }
     }
 }
 
 void CommandNode::compile_write() {
     auto& m_data = std::get<WriteData>(data);
-    m_data.value->compile();
-    program.emplace_back("PUT", 0);
+    if (m_data.value->type == ValueNode::ValueType::VARIABLE) {
+        program.emplace_back("PUT", find_symbol(m_data.value->name)->address);  
+        return;
+    }
+
+    if(m_data.value->type == ValueNode::ValueType::ARRAY_ELEMENT) {
+        if (m_data.value->index_name != "") {
+            int a = find_symbol(m_data.value->name)->zero_address;
+            program.emplace_back("SET", a);
+            program.emplace_back("ADD", find_symbol(m_data.value->index_name)->address);
+            program.emplace_back("PUT", 0);
+        }
+        else { 
+            int a = find_symbol(m_data.value->name)->zero_address + m_data.value->index_value;
+            program.emplace_back("PUT", a); 
+        }
+    }
 }

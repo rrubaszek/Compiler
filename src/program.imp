@@ -1,13 +1,10 @@
+# Binarna postać liczby 
 PROGRAM IS
-  a,b,i,c[-10:10]
+	n, p[-10:10]
 BEGIN
-  a:=0;
-  b:=10;
-  i:= 10;
-  c[5] := i;
-  c[4] := a;
-  FOR j FROM c[5] DOWNTO c[4] DO
-    a:=a+1;
-    WRITE a;
-  ENDFOR
+  n:=0;
+    READ p[n];
+    p[1] := n * 2;
+    p[1] := p[1] * 2;
+    WRITE p[0];
 END
