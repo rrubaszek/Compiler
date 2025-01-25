@@ -1,10 +1,19 @@
-# Binarna postać liczby 
-PROGRAM IS
-	n, p[-10:10]
+PROCEDURE gcd(a,b,c) IS
+  x,y
 BEGIN
-  n:=0;
-    READ p[n];
-    p[1] := n * 2;
-    p[1] := p[1] * 2;
-    WRITE p[0];
+  x:=a;
+  y:=b;
+  WRITE x;
+  WRITE y;
+  c := 5;
+END
+
+PROGRAM IS
+  a,b,c
+BEGIN
+  READ a;
+  READ b;
+  READ c;
+  #gcd(a,b,c);
+  WRITE c;
 END

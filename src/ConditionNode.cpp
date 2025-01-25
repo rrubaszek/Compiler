@@ -38,6 +38,13 @@ void ConditionNode::compile_eq() {
         return;
     }
 
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::VARIABLE) {
+        program.emplace_back("LOAD", find_symbol(right->name)->address);
+        program.emplace_back("SUB", find_symbol(left->name)->address);
+        program.emplace_back("JZERO", 2);
+        return;
+    }
+
     right->compile();
     int temp = allocate_register();
     program.emplace_back("STORE", temp);
@@ -68,6 +75,14 @@ void ConditionNode::compile_neq() {
     
     if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::CONSTANT) {
         program.emplace_back("SET", right->value);
+        program.emplace_back("SUB", find_symbol(left->name)->address);
+        program.emplace_back("JZERO", 2);
+        program.emplace_back("JUMP", 2);
+        return;
+    }
+
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::VARIABLE) {
+        program.emplace_back("LOAD", find_symbol(right->name)->address);
         program.emplace_back("SUB", find_symbol(left->name)->address);
         program.emplace_back("JZERO", 2);
         program.emplace_back("JUMP", 2);
@@ -108,6 +123,13 @@ void ConditionNode::compile_gt() {
         program.emplace_back("JNEG", 2);
         return;
     }
+    
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::VARIABLE) {
+        program.emplace_back("LOAD", find_symbol(right->name)->address);
+        program.emplace_back("SUB", find_symbol(left->name)->address);
+        program.emplace_back("JNEG", 2);
+        return;
+    }
 
     right->compile();
     int temp = allocate_register();
@@ -138,6 +160,13 @@ void ConditionNode::compile_lt() {
     
     if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::CONSTANT) {
         program.emplace_back("SET", right->value);
+        program.emplace_back("SUB", find_symbol(left->name)->address);
+        program.emplace_back("JPOS", 2);
+        return;
+    }
+
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::VARIABLE) {
+        program.emplace_back("LOAD", find_symbol(right->name)->address);
         program.emplace_back("SUB", find_symbol(left->name)->address);
         program.emplace_back("JPOS", 2);
         return;
@@ -179,6 +208,14 @@ void ConditionNode::compile_geq() {
         return;
     }
 
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::VARIABLE) {
+        program.emplace_back("LOAD", find_symbol(right->name)->address);
+        program.emplace_back("SUB", find_symbol(left->name)->address);
+        program.emplace_back("JNEG", 2);
+        program.emplace_back("JUMP", 2);
+        return;
+    }
+
     right->compile();
     int temp = allocate_register();
     program.emplace_back("STORE", temp);
@@ -213,6 +250,14 @@ void ConditionNode::compile_leq() {
         program.emplace_back("SUB", find_symbol(left->name)->address);
         program.emplace_back("JPOS", 3);
         program.emplace_back("JZERO", 2);
+        return;
+    }
+
+    if (left->type ==  ValueNode::ValueType::VARIABLE && right->type ==  ValueNode::ValueType::VARIABLE) {
+        program.emplace_back("LOAD", find_symbol(right->name)->address);
+        program.emplace_back("SUB", find_symbol(left->name)->address);
+        program.emplace_back("JPOS", 2);
+        program.emplace_back("JUMP", 2);
         return;
     }
 

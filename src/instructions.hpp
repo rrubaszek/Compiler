@@ -34,20 +34,31 @@ struct Entity {
 
 struct symbol_entry {   
 	int address;
-	int zero_address; 
+	std::optional<int> zero_address; 
 	bool is_iterator;  
+};
+
+struct procedure {
+	std::string name;
+	int address;
+	int relative_address; // Line no in program to calculate jumps for proc_call
+	bool is_called;
 };
 
 extern std::vector<instruction> program;
 extern std::unordered_map<std::string, symbol_entry> global_symbol_table;
 extern std::stack<std::unordered_map<std::string, symbol_entry>> local_symbol_stack;
+extern std::unordered_map<std::string, procedure> procedure_table;
 
 extern bool is_local;
 extern int next_free_register;
 
 symbol_entry* find_symbol(const std::string& name);
-void add_symbol(const std::string& name, int zero_index, int size, bool is_local, bool is_iterator);
+void add_symbol(const std::string& name, int address, std::optional<int> zero_index, bool is_local, bool is_iterator);
 void remove_symbol(const std::string& name);
+
+procedure* find_procedure(const std::string& name);
+void add_procedure(const std::string& name, int address, int relative_address, bool is_called);
 
 int allocate_register();
 void free_register(int reg);

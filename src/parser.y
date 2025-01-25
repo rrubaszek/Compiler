@@ -201,9 +201,7 @@ command:
         node->data = data;
         $$ = node;
     }
-    | proc_call ';' {
-        CommandNode::ProcCallData data; 
-        $1->data = data;    
+    | proc_call ';' {    
         $$ = $1;
     }
     | READ identifier ';' {

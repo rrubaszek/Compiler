@@ -94,7 +94,7 @@ void ExpressionNode::compile_mul() {
 
     if (right->type != ValueNode::ValueType::ARRAY_ELEMENT && left->value < 10 && left->value > 0) {
         right->compile();
-        for (int i = 1; i < right->value; i++) {
+        for (int i = 1; i < left->value; i++) {
             program.emplace_back("ADD", program[program.size()-1].operand);
         }
         return;
@@ -102,7 +102,7 @@ void ExpressionNode::compile_mul() {
 
     if (right->type == ValueNode::ValueType::ARRAY_ELEMENT && left->value < 10 && left->value > 0) {
         right->compile();
-        for (int i = 1; i < right->value; i++) {
+        for (int i = 1; i < left->value; i++) {
             program.emplace_back("ADDI", program[program.size()-1].operand);
         }
         return;

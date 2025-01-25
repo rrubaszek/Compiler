@@ -33,7 +33,7 @@ void CommandNode::compile_assign() {
 
     if(m_data.left->is_array) {
         if (m_data.left->index_name != "") {
-            int a = find_symbol(m_data.left->name)->zero_address;
+            int a = find_symbol(m_data.left->name)->zero_address.value();
             program.emplace_back("SET", a);
             program.emplace_back("ADD", find_symbol(m_data.left->index_name)->address);
             int temp = allocate_register();
@@ -43,7 +43,7 @@ void CommandNode::compile_assign() {
             free_register(temp);
         }
         else {
-            int a = find_symbol(m_data.left->name)->zero_address + m_data.left->index_value;
+            int a = find_symbol(m_data.left->name)->zero_address.value() + m_data.left->index_value;
             m_data.right->compile();
             program.emplace_back("STORE", a); 
         }
@@ -97,24 +97,11 @@ void CommandNode::compile_while() {
 
 void CommandNode::compile_repeat() {
     auto& m_data = std::get<RepeatData>(data);
-    if (m_data.condition->type == ConditionNode::ConditionType::GT)
-        m_data.condition->type = ConditionNode::ConditionType::LEQ; 
-    else if (m_data.condition->type == ConditionNode::ConditionType::LT)
-        m_data.condition->type = ConditionNode::ConditionType::GEQ;
-    else if (m_data.condition->type == ConditionNode::ConditionType::EQ)
-        m_data.condition->type = ConditionNode::ConditionType::NEQ;        
-    else if (m_data.condition->type == ConditionNode::ConditionType::NEQ)
-        m_data.condition->type = ConditionNode::ConditionType::EQ;
-    else if (m_data.condition->type == ConditionNode::ConditionType::LEQ)
-        m_data.condition->type = ConditionNode::ConditionType::GT;
-    else if (m_data.condition->type == ConditionNode::ConditionType::GEQ)
-        m_data.condition->type = ConditionNode::ConditionType::LT;
 
     int startBody = program.size();
     m_data.loop_body->compile(); 
 
     m_data.condition->compile(); 
-    program.emplace_back("JUMP", 2);
     program.emplace_back("JUMP", startBody - program.size());
 }
 
@@ -175,7 +162,37 @@ void CommandNode::compile_for_rev() {
 }
 
 void CommandNode::compile_proc_call() {
-    std::cout << "Compile proc call\n";
+    auto& m_data = std::get<ProcCallData>(data);
+
+    std::cout << "Compiling procedure call: " << m_data.name << "\n";
+
+    for (auto proc : procedure_table)
+        std::cout << proc.first << "\n";
+    // Znalezienie procedury
+    auto* proc = find_procedure(m_data.name);
+    if (!proc) {
+        throw std::runtime_error("Undefined procedure: " + m_data.name);
+    }
+
+    proc->is_called = true;
+
+    int argIndex = proc->address + 1;
+    for (const auto& arg : m_data.args) {
+        auto id = find_symbol(arg);
+        if (id->zero_address.has_value()) {
+            program.emplace_back("SET", id->zero_address.value());
+            program.emplace_back("STORE", proc->address + argIndex);
+        } else {
+            program.emplace_back("LOAD", id->address);
+            program.emplace_back("STORE", proc->address + argIndex);
+        }
+        argIndex++;
+    }
+
+    // Procedure call
+    program.emplace_back("SET", program.size() + 3);
+    program.emplace_back("STORE", proc->address);
+    program.emplace_back("JUMP", proc->relative_address - program.size());
 }
 
 void CommandNode::compile_read() {
@@ -187,7 +204,7 @@ void CommandNode::compile_read() {
 
     if(m_data.target->is_array) {
         if (m_data.target->index_name != "") {
-            int a = find_symbol(m_data.target->name)->zero_address;
+            int a = find_symbol(m_data.target->name)->zero_address.value();
             program.emplace_back("SET", a);
             program.emplace_back("ADD", find_symbol(m_data.target->index_name)->address);
             
@@ -198,7 +215,7 @@ void CommandNode::compile_read() {
             free_register(temp);
         }
         else { 
-            int a = find_symbol(m_data.target->name)->zero_address + m_data.target->index_value;
+            int a = find_symbol(m_data.target->name)->zero_address.value() + m_data.target->index_value;
             program.emplace_back("GET", a); 
         }
     }
@@ -206,6 +223,12 @@ void CommandNode::compile_read() {
 
 void CommandNode::compile_write() {
     auto& m_data = std::get<WriteData>(data);
+
+    if (m_data.value->type == ValueNode::ValueType::CONSTANT) {
+        program.emplace_back("SET", m_data.value->value);
+        program.emplace_back("PUT", 0);
+        return;
+    }
     if (m_data.value->type == ValueNode::ValueType::VARIABLE) {
         program.emplace_back("PUT", find_symbol(m_data.value->name)->address);  
         return;
@@ -213,13 +236,13 @@ void CommandNode::compile_write() {
 
     if(m_data.value->type == ValueNode::ValueType::ARRAY_ELEMENT) {
         if (m_data.value->index_name != "") {
-            int a = find_symbol(m_data.value->name)->zero_address;
+            int a = find_symbol(m_data.value->name)->zero_address.value();
             program.emplace_back("SET", a);
             program.emplace_back("ADD", find_symbol(m_data.value->index_name)->address);
             program.emplace_back("PUT", 0);
         }
         else { 
-            int a = find_symbol(m_data.value->name)->zero_address + m_data.value->index_value;
+            int a = find_symbol(m_data.value->name)->zero_address.value() + m_data.value->index_value;
             program.emplace_back("PUT", a); 
         }
     }

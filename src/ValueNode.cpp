@@ -11,7 +11,7 @@ void ValueNode::compile() {
             break;
         case ARRAY_ELEMENT:
             if (index_name != "") {
-                int a = find_symbol(name)->zero_address;
+                int a = find_symbol(name)->zero_address.value();
                 program.emplace_back("SET", a);
                 program.emplace_back("ADD", find_symbol(index_name)->address);
                 int temp = allocate_register();
@@ -20,7 +20,7 @@ void ValueNode::compile() {
                 free_register(temp);
             }
             else {
-                int a = find_symbol(name)->zero_address + index_value;
+                int a = find_symbol(name)->zero_address.value() + index_value;
                 program.emplace_back("LOAD", a); 
             }
             break;

@@ -8,7 +8,7 @@ void DeclarationsNode::compile() {
             std::cerr << "Variable already declared: " << var << "\n";
             continue;
         }
-        add_symbol(var, allocate_register(), 1, is_local, false);
+        add_symbol(var, allocate_register(), std::nullopt, is_local, false);
     }
 
     for (const auto& array : arrays) {

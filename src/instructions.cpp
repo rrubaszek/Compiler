@@ -5,11 +5,25 @@
 std::unordered_map<std::string, symbol_entry> global_symbol_table;
 std::stack<std::unordered_map<std::string, symbol_entry>> local_symbol_stack;
 std::vector<instruction> program;
+std::unordered_map<std::string, procedure> procedure_table;
 
 int next_free_register = 1;
 bool is_local = false;
 
 void yyerror(const char *s);
+
+procedure* find_procedure(const std::string& name) {
+    auto it = procedure_table.find(name);
+    if (it != procedure_table.end()) {
+        return &it->second;
+    }
+    return nullptr;
+}
+
+void add_procedure(const std::string& name, int address, int relative_address, bool is_called) {
+    procedure proc = { name, address, relative_address, is_called }; 
+    procedure_table[name] = proc;
+}
 
 symbol_entry* find_symbol(const std::string& name) {
     if (!local_symbol_stack.empty()) {
@@ -27,7 +41,7 @@ symbol_entry* find_symbol(const std::string& name) {
     return nullptr; 
 }
 
-void add_symbol(const std::string& name, int address, int zero_index, bool is_local, bool is_iterator) {
+void add_symbol(const std::string& name, int address, std::optional<int> zero_index, bool is_local, bool is_iterator) {
     symbol_entry symbol = {address, zero_index, is_iterator};
     if (is_local) {
         local_symbol_stack.top()[name] = symbol;
