@@ -13,6 +13,8 @@
 #include "ProcedureNode.hpp"
 #include "ProgramNode.hpp"
 
+#include "instructions.hpp"
+
 #include "parser.tab.hpp"
 
 #include <stdio.h>
@@ -412,13 +414,13 @@ value :
     | identifier {
         ValueNode* node = new ValueNode();
         node->name = $1->name;
-        node->type = ValueNode::ValueType::VARIABLE;
+        node->type = ValueNode::ValueType::OTHER;
 
         if ($1->is_array) {
-            node->type = ValueNode::ValueType::ARRAY_ELEMENT;
             node->index_name = $1->index_name;
             node->index_value = $1->index_value;
         }
+
         $$ = node;
     }
 ;
@@ -448,5 +450,5 @@ identifier :
 %%
 
 void yyerror(const char* s) {
-	fprintf(stderr, "Parse error: %s\n", s);
+	fprintf(stderr, "Parse error: %s %d\n", s, yylineno);
 }

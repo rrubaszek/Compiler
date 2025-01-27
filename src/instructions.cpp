@@ -41,8 +41,8 @@ symbol_entry* find_symbol(const std::string& name) {
     return nullptr; 
 }
 
-void add_symbol(const std::string& name, int address, std::optional<int> zero_index, bool is_local, bool is_iterator) {
-    symbol_entry symbol = {address, zero_index, is_iterator};
+void add_symbol(const std::string& name, int address, std::optional<int> start_address, bool is_local, bool is_iterator, Type type) {
+    symbol_entry symbol = {address, start_address, is_iterator, type};
     if (is_local) {
         local_symbol_stack.top()[name] = symbol;
         std::cout << "local" << name << " " << address << "\n";

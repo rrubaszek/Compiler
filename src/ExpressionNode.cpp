@@ -23,16 +23,36 @@ void ExpressionNode::compile_add() {
         return;
     }
 
-    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::VARIABLE) {
-       program.emplace_back("SET", left->value);
-       program.emplace_back("ADD", find_symbol(right->name)->address); 
-       return;
+    if (left->type == ValueNode::ValueType::CONSTANT) {
+        auto symbol = find_symbol(right->name);
+
+        if (symbol->type == Type::VARIABLE) {
+            program.emplace_back("SET", left->value);
+            program.emplace_back("ADD", symbol->address); 
+            return;
+        }
+
+        if (symbol->type == Type::POINTER) {
+            program.emplace_back("SET", left->value);
+            program.emplace_back("ADDI", symbol->address); 
+            return;
+        }
     }
 
-    if (left->type == ValueNode::ValueType::VARIABLE && right->type == ValueNode::ValueType::CONSTANT) {
-       program.emplace_back("SET", right->value);
-       program.emplace_back("ADD", find_symbol(left->name)->address); 
-       return;
+    if (right->type == ValueNode::ValueType::CONSTANT) {
+        auto symbol = find_symbol(left->name);
+
+        if (symbol->type == Type::VARIABLE) {
+            program.emplace_back("SET", right->value);
+            program.emplace_back("ADD", symbol->address); 
+            return;
+        }
+
+        if (symbol->type == Type::POINTER) {
+            program.emplace_back("SET", right->value);
+            program.emplace_back("ADDI", symbol->address); 
+            return;
+        }
     }
 
     // TODO: maybe this can be shortened
@@ -50,16 +70,36 @@ void ExpressionNode::compile_sub() {
         return;
     }
 
-    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::VARIABLE) {
-       program.emplace_back("SET", left->value);
-       program.emplace_back("SUB", find_symbol(right->name)->address); 
-       return;
+    if (left->type == ValueNode::ValueType::CONSTANT) {
+        auto symbol = find_symbol(right->name);
+
+        if (symbol->type == Type::VARIABLE) {
+            program.emplace_back("SET", left->value);
+            program.emplace_back("SUB", symbol->address); 
+            return;
+        }
+
+        if (symbol->type == Type::POINTER) {
+            program.emplace_back("SET", left->value);
+            program.emplace_back("SUBI", symbol->address); 
+            return;
+        }
     }
 
-    if (left->type == ValueNode::ValueType::VARIABLE && right->type == ValueNode::ValueType::CONSTANT) {
-       program.emplace_back("SET", -(right->value));
-       program.emplace_back("ADD", find_symbol(left->name)->address); 
-       return;
+    if (right->type == ValueNode::ValueType::CONSTANT) {
+       auto symbol = find_symbol(left->name);
+
+        if (symbol->type == Type::VARIABLE) {
+            program.emplace_back("SET", -(right->value));
+            program.emplace_back("ADD", symbol->address); 
+            return;
+        }
+
+        if (symbol->type == Type::POINTER) {
+            program.emplace_back("SET", -(right->value));
+            program.emplace_back("ADDI", symbol->address); 
+            return;
+        }
     }
 
     right->compile();
@@ -76,37 +116,37 @@ void ExpressionNode::compile_mul() {
         return;
     }
 
-    if (left->type != ValueNode::ValueType::ARRAY_ELEMENT && right->value < 10 && right->value > 0) {
-        left->compile();
-        for (int i = 1; i < right->value; i++) {
-            program.emplace_back("ADD", program[program.size()-1].operand);
-        }
-        return;
-    }
+    // if (left->type != ValueNode::ValueType::ARRAY_ELEMENT && right->value < 10 && right->value > 0) {
+    //     left->compile();
+    //     for (int i = 1; i < right->value; i++) {
+    //         program.emplace_back("ADD", program[program.size()-1].operand);
+    //     }
+    //     return;
+    // }
 
-    if (left->type == ValueNode::ValueType::ARRAY_ELEMENT && right->value < 10 && right->value > 0) {
-        left->compile();
-        for (int i = 1; i < right->value; i++) {
-            program.emplace_back("ADDI", program[program.size()-1].operand);
-        }
-        return;
-    }
+    // if (left->type == ValueNode::ValueType::ARRAY_ELEMENT && right->value < 10 && right->value > 0) {
+    //     left->compile();
+    //     for (int i = 1; i < right->value; i++) {
+    //         program.emplace_back("ADDI", program[program.size()-1].operand);
+    //     }
+    //     return;
+    // }
 
-    if (right->type != ValueNode::ValueType::ARRAY_ELEMENT && left->value < 10 && left->value > 0) {
-        right->compile();
-        for (int i = 1; i < left->value; i++) {
-            program.emplace_back("ADD", program[program.size()-1].operand);
-        }
-        return;
-    }
+    // if (right->type != ValueNode::ValueType::ARRAY_ELEMENT && left->value < 10 && left->value > 0) {
+    //     right->compile();
+    //     for (int i = 1; i < left->value; i++) {
+    //         program.emplace_back("ADD", program[program.size()-1].operand);
+    //     }
+    //     return;
+    // }
 
-    if (right->type == ValueNode::ValueType::ARRAY_ELEMENT && left->value < 10 && left->value > 0) {
-        right->compile();
-        for (int i = 1; i < left->value; i++) {
-            program.emplace_back("ADDI", program[program.size()-1].operand);
-        }
-        return;
-    }
+    // if (right->type == ValueNode::ValueType::ARRAY_ELEMENT && left->value < 10 && left->value > 0) {
+    //     right->compile();
+    //     for (int i = 1; i < left->value; i++) {
+    //         program.emplace_back("ADDI", program[program.size()-1].operand);
+    //     }
+    //     return;
+    // }
 
     int a_addr = allocate_register();
     int b_addr = allocate_register();

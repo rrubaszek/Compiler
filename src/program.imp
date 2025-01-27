@@ -1,19 +1,9 @@
-PROCEDURE gcd(a,b,c) IS
-  x,y
-BEGIN
-  x:=a;
-  y:=b;
-  WRITE x;
-  WRITE y;
-  c := 5;
-END
-
 PROGRAM IS
-  a,b,c
+  n, m[5:15], k
 BEGIN
-  READ a;
-  READ b;
-  READ c;
-  #gcd(a,b,c);
-  WRITE c;
+  n:=100;
+  k:=4;
+  m[k]:=1;
+  
+  WRITE m[k];
 END

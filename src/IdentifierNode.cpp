@@ -2,5 +2,8 @@
 #include "instructions.hpp"
 
 void IdentifierNode::compile()  {
-    std::cout << "Compiling identifier\n";
+    auto symbol = find_symbol(name);
+    if (symbol->type == POINTER) {
+        is_pointer = true;
+    }
 }

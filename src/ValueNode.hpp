@@ -5,7 +5,7 @@
 
 class ValueNode : public Node {
 public:
-    enum ValueType { CONSTANT, VARIABLE, ARRAY_ELEMENT };
+    enum ValueType { CONSTANT, OTHER };
     ValueType type;
 
     int value;

@@ -32,10 +32,13 @@ struct Entity {
 	{}
 };
 
+enum Type { VARIABLE, ARRAY, POINTER, ARRAY_POINTER };
+
 struct symbol_entry {   
 	int address;
-	std::optional<int> zero_address; 
+	std::optional<int> start_address; 
 	bool is_iterator;  
+	Type type;
 };
 
 struct procedure {
@@ -51,10 +54,12 @@ extern std::stack<std::unordered_map<std::string, symbol_entry>> local_symbol_st
 extern std::unordered_map<std::string, procedure> procedure_table;
 
 extern bool is_local;
+extern int yylineno;
 extern int next_free_register;
+extern void yyerror(const char* s);
 
 symbol_entry* find_symbol(const std::string& name);
-void add_symbol(const std::string& name, int address, std::optional<int> zero_index, bool is_local, bool is_iterator);
+void add_symbol(const std::string& name, int address, std::optional<int> start_address, bool is_local, bool is_iterator, Type type);
 void remove_symbol(const std::string& name);
 
 procedure* find_procedure(const std::string& name);

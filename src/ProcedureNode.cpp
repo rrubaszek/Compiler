@@ -11,10 +11,10 @@ void ProcedureNode::compile() {
 
     for (const auto& arg : args) {
         if (arg.second) {
-            // Array, pass pointer to 0 element in T
-            add_symbol(arg.first, allocate_register(), 1, is_local, false);
+            // Array, pass pointer to 0 element in T, not an entire array, so basically type is also pointer
+            add_symbol(arg.first, allocate_register(), std::nullopt, is_local, false, ARRAY_POINTER);
         } else {
-            add_symbol(arg.first, allocate_register(), 1, is_local, false);
+            add_symbol(arg.first, allocate_register(), std::nullopt, is_local, false, POINTER);
         }
     }
 
