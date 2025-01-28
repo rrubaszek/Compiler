@@ -39,6 +39,7 @@ struct symbol_entry {
 	std::optional<int> start_address; 
 	bool is_iterator;  
 	Type type;
+	int size;
 };
 
 struct procedure {
@@ -59,7 +60,7 @@ extern int next_free_register;
 extern void yyerror(const char* s);
 
 symbol_entry* find_symbol(const std::string& name);
-void add_symbol(const std::string& name, int address, std::optional<int> start_address, bool is_local, bool is_iterator, Type type);
+void add_symbol(const std::string& name, int address, std::optional<int> start_address, bool is_local, bool is_iterator, Type type, int size);
 void remove_symbol(const std::string& name);
 
 procedure* find_procedure(const std::string& name);
@@ -68,6 +69,4 @@ void add_procedure(const std::string& name, int address, int relative_address, b
 int allocate_register();
 void free_register(int reg);
 
-Entity* _mul(Entity* a, Entity* b);
-Entity* _div(Entity* a, Entity* b);
 Entity* _mod(Entity* a, Entity* b);

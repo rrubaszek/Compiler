@@ -280,7 +280,7 @@ void ConditionNode::compile_geq() {
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", right->value);
             program.emplace_back("SUB", symbol->address);
-            program.emplace_back("JPOS", 3);
+            program.emplace_back("JNEG", 3);
             program.emplace_back("JZERO", 2);
             return; 
         }
@@ -288,7 +288,7 @@ void ConditionNode::compile_geq() {
         if (symbol->type == Type::POINTER) {
             program.emplace_back("SET", right->value);
             program.emplace_back("SUBI", symbol->address);
-            program.emplace_back("JPOS", 3);
+            program.emplace_back("JNEG", 3);
             program.emplace_back("JZERO", 2);
             return; 
         }
@@ -342,7 +342,7 @@ void ConditionNode::compile_leq() {
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", right->value);
             program.emplace_back("SUB", symbol->address);
-            program.emplace_back("JNEG", 3);
+            program.emplace_back("JPOS", 3);
             program.emplace_back("JZERO", 2);
             return;
         }
@@ -350,7 +350,7 @@ void ConditionNode::compile_leq() {
         if (symbol->type == Type::POINTER) {
             program.emplace_back("SET", right->value);
             program.emplace_back("SUBI", symbol->address);
-            program.emplace_back("JNEG", 3);
+            program.emplace_back("JPOS", 3);
             program.emplace_back("JZERO", 2);
             return;
         }

@@ -1,6 +1,6 @@
 %option noyywrap
-%option yylineno
 %option nounput
+%option yylineno
 
 %{
 #include "instructions.hpp"
@@ -27,28 +27,28 @@
 
 %%
 
-\#.*\n                  {}
-[ \t\r\n]+              {}
-[_a-z]+                 { yylval.strval = strdup(yytext); return pidentifier; }
--?[0-9]+                { yylval.llval = atoll(yytext); return num; }
+\#.*\n                {}
+[ \t\r\n]+            {}
+[_a-z]+               { yylval.strval = strdup(yytext); return pidentifier; }
+[0-9]+                { yylval.llval = atoll(yytext); return num; }
 [+\-\*/^\()\[\]\;\:\,\%]    { return yytext[0]; }
 
-":="                    { return ASSIGN; }
-"="                     { return EQ; }
-"!="                    { return NEQ; }
-"<"                     { return LE; }
-">"                     { return GT; }
-"<="                    { return LEQ; }
-">="                    { return GEQ; }
+":="                  { return ASSIGN; }
+"="                   { return EQ; }
+"!="                  { return NEQ; }
+"<"                   { return LE; }
+">"                   { return GT; }
+"<="                  { return LEQ; }
+">="                  { return GEQ; }
 
 "PROGRAM"             { return PROGRAM; }
 "PROCEDURE"           { return PROCEDURE; }
-"IS"                 { return IS; }
-"BEGIN"              { return _BEGIN; }
-"END"                { return END; }
-"IF"                 { return IF; }
+"IS"                  { return IS; }
+"BEGIN"               { return _BEGIN; }
+"END"                 { return END; }
+"IF"                  { return IF; }
 "THEN"                { return THEN; }
-"ELSE"               { return ELSE; }
+"ELSE"                { return ELSE; }
 "ENDIF"               { return ENDIF; }
 "WHILE"               { return WHILE; }
 "DO"                  { return DO; }

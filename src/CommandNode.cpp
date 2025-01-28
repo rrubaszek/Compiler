@@ -43,7 +43,9 @@ void CommandNode::compile_assign() {
     if(m_data.left->is_array) {
         if (left->type == Type::ARRAY) {
             if (m_data.left->index_name != "") {
-                m_data.left->compile();
+                int a = left->address - left->start_address.value();
+                program.emplace_back("SET", a);
+                program.emplace_back("ADD", find_symbol(m_data.left->index_name)->address);
                 int temp = allocate_register();
                 program.emplace_back("STORE", temp);
                 m_data.right->compile();
@@ -57,10 +59,13 @@ void CommandNode::compile_assign() {
             }
             return;
         }
-
+        
+        // TODO: fix arrays in procedures
         if (left->type == Type::ARRAY_POINTER) {
             if (m_data.left->index_name != "") {
-                m_data.left->compile();
+                program.emplace_back("LOADI", left->address + 1);
+                program.emplace_back("SUB", left->address); // Constains information of array start index (-10 eg)
+                program.emplace_back("ADD", find_symbol(m_data.left->index_name)->address);
                 int temp = allocate_register();
                 program.emplace_back("STORE", temp);
                 m_data.right->compile();
@@ -68,7 +73,10 @@ void CommandNode::compile_assign() {
                 free_register(temp);
             }
             else {
-                m_data.left->compile();
+                program.emplace_back("SET", m_data.left->index_value);
+                program.emplace_back("ADDI", left->address + 1);
+                program.emplace_back("SUB", left->address); // Constains information of array start index (-10 eg)
+
                 int temp = allocate_register();
                 program.emplace_back("STORE", temp); 
                 m_data.right->compile();
@@ -143,57 +151,78 @@ void CommandNode::compile_repeat() {
 void CommandNode::compile_for() {
     auto& m_data = std::get<ForData>(data);
 
-    // Create new scope
-    local_symbol_stack.push({});
-    add_symbol(m_data.loop_variable, allocate_register(), 1, true, true, VARIABLE);
-    
+    bool is_declared;
+    auto symbol = find_symbol(m_data.loop_variable);
+    if (symbol != nullptr) {
+        symbol->is_iterator = true;
+        is_declared = true;
+    }
+    else {
+        add_symbol(m_data.loop_variable, allocate_register(), 1, is_local, true, VARIABLE, 1);
+        is_declared = false;
+    }
+
+    symbol = find_symbol(m_data.loop_variable);
+
     m_data.start_value->compile();
-    program.emplace_back("STORE", find_symbol(m_data.loop_variable)->address);
+    program.emplace_back("STORE", symbol->address);
 
     int loopBody = program.size();
     m_data.loop_body->compile();
 
     m_data.end_value->compile();
-    program.emplace_back("SUB", find_symbol(m_data.loop_variable)->address);
+    program.emplace_back("SUB", symbol->address);
     program.emplace_back("JZERO", 5);
 
     program.emplace_back("SET", 1);
-    program.emplace_back("ADD", find_symbol(m_data.loop_variable)->address);
-    program.emplace_back("STORE", find_symbol(m_data.loop_variable)->address);
+    program.emplace_back("ADD", symbol->address);
+    program.emplace_back("STORE", symbol->address);
 
     program.emplace_back("JUMP", loopBody - program.size());
 
     // End scope
-    remove_symbol(m_data.loop_variable);
-    local_symbol_stack.pop();
+    if (!is_declared) {
+        remove_symbol(m_data.loop_variable);
+    }
 }
 
 void CommandNode::compile_for_rev() {
     auto& m_data = std::get<ForRevData>(data);
 
     // Create new scope
-    local_symbol_stack.push({});
-    add_symbol(m_data.loop_variable, allocate_register(), 1, true, true, VARIABLE);
+    bool is_declared;
+    auto symbol = find_symbol(m_data.loop_variable);
+    if (symbol != nullptr) {
+        symbol->is_iterator = true;
+        is_declared = true;
+    }
+    else {
+        add_symbol(m_data.loop_variable, allocate_register(), 1, is_local, true, VARIABLE, 1);
+        is_declared = false;
+    }
+
+    symbol = find_symbol(m_data.loop_variable);
     
     m_data.start_value->compile();
-    program.emplace_back("STORE", find_symbol(m_data.loop_variable)->address);
+    program.emplace_back("STORE", symbol->address);
 
     int loopBody = program.size();
     m_data.loop_body->compile();
 
     m_data.end_value->compile();
-    program.emplace_back("SUB", find_symbol(m_data.loop_variable)->address);
+    program.emplace_back("SUB", symbol->address);
     program.emplace_back("JZERO", 5);
 
     program.emplace_back("SET", -1);
-    program.emplace_back("ADD", find_symbol(m_data.loop_variable)->address);
-    program.emplace_back("STORE", find_symbol(m_data.loop_variable)->address);
+    program.emplace_back("ADD", symbol->address);
+    program.emplace_back("STORE", symbol->address);
 
     program.emplace_back("JUMP", loopBody - program.size());
 
     // End scope
-    remove_symbol(m_data.loop_variable);
-    local_symbol_stack.pop();
+    if (!is_declared) {
+        remove_symbol(m_data.loop_variable);
+    }
 }
 
 void CommandNode::compile_proc_call() {
@@ -249,7 +278,7 @@ void CommandNode::compile_read() {
 
     if(symbol->type == Type::ARRAY) {
         if (m_data.target->index_name != "") {
-            int a = symbol->start_address.value();
+            int a = symbol->address - symbol->start_address.value();
             program.emplace_back("SET", a);
             program.emplace_back("ADD", find_symbol(m_data.target->index_name)->address);
             
@@ -260,16 +289,22 @@ void CommandNode::compile_read() {
             free_register(temp);
         }
         else { 
-            int a = symbol->start_address.value() + m_data.target->index_value;
+            int a = symbol->address - symbol->start_address.value() + m_data.target->index_value;
+
+            if (a < symbol->start_address || a > symbol->size + std::abs(symbol->start_address.value())) {
+                yyerror("Array out of bounds, line: ");
+            }
+
             program.emplace_back("GET", a); 
         }
         return;
     }
 
+    // TODO: fix arrays in procedures
     if(symbol->type == Type::ARRAY_POINTER) {
         if (m_data.target->index_name != "") {
-            int a = symbol->address;
-            program.emplace_back("LOADI", a);
+            program.emplace_back("SET", -symbol->start_address.value());
+            program.emplace_back("ADDI", symbol->address);
             program.emplace_back("ADD", find_symbol(m_data.target->index_name)->address);
             
             int temp = allocate_register();
@@ -279,7 +314,7 @@ void CommandNode::compile_read() {
             free_register(temp);
         }
         else { 
-            program.emplace_back("SET", m_data.target->index_value);
+            program.emplace_back("SET", m_data.target->index_value - symbol->start_address.value());
             program.emplace_back("ADDI", symbol->address);
 
             int temp = allocate_register();
@@ -310,34 +345,49 @@ void CommandNode::compile_write() {
 
     if (symbol->type == Type::ARRAY) {
         if (m_data.value->index_name != "") {
-            int a = symbol->start_address.value();
+            int a = symbol->address - symbol->start_address.value();
             program.emplace_back("SET", a);
             program.emplace_back("ADD", find_symbol(m_data.value->index_name)->address);
             int temp = allocate_register();
             program.emplace_back("STORE", temp);
             program.emplace_back("LOADI", temp);
             program.emplace_back("PUT", 0);
+            free_register(temp);
         }
         else { 
-            int a = symbol->start_address.value() + m_data.value->index_value;
+            int a = symbol->address - symbol->start_address.value() + m_data.value->index_value;
+
+            if (a < symbol->start_address || a > symbol->size + std::abs(symbol->start_address.value())) {
+                yyerror("Array out of bounds, line: ");
+            }
+
             program.emplace_back("PUT", a); 
         }
     }
 
+    // TODO: fix arrays in procedures
     if (symbol->type == Type::ARRAY_POINTER) {
         if (m_data.value->index_name != "") {
-            int a = symbol->address;
-            program.emplace_back("LOADI", a);
+            program.emplace_back("LOADI", symbol->address + 1);
             program.emplace_back("ADD", find_symbol(m_data.value->index_name)->address);
+            program.emplace_back("SUB", symbol->address);
+            
             int temp = allocate_register();
             program.emplace_back("STORE", temp);
             program.emplace_back("LOADI", temp);
             program.emplace_back("PUT", 0);
+            free_register(temp);
         }
         else { 
             program.emplace_back("SET", m_data.value->index_value);
-            program.emplace_back("ADDI", symbol->address);
-            program.emplace_back("PUT", 0); 
+            program.emplace_back("ADDI", symbol->address + 1);
+            program.emplace_back("SUB", symbol->address);
+
+            int temp = allocate_register();
+            program.emplace_back("STORE", temp);
+            program.emplace_back("LOADI", temp);
+            program.emplace_back("PUT", 0);
+            free_register(temp);
         }
     }
 }

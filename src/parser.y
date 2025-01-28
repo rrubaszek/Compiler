@@ -70,6 +70,7 @@ extern int yylineno;
 %type <id_node> identifier
 %type <_args_decl> args_decl
 %type <_args> args
+%type <llval> number
  
 %left '-' '+'
 %left '*' '/'
@@ -250,7 +251,7 @@ declarations :
         $1->variables.push_back($3);
         $$ = $1;
     }
-    | declarations ',' pidentifier '[' num ':' num ']' { 
+    | declarations ',' pidentifier '[' number ':' number ']' { 
         DeclarationsNode::ArrayDeclarations array;
         array.name = $3;
         array.start = $5;
@@ -263,7 +264,7 @@ declarations :
         node->variables.push_back($1);
         $$ = node;
     }
-    | pidentifier '[' num ':' num ']' { 
+    | pidentifier '[' number ':' number ']' { 
         DeclarationsNode* node = new DeclarationsNode();
         DeclarationsNode::ArrayDeclarations array;
         array.name = $1;
@@ -399,15 +400,9 @@ condition :
 ;
 
 value :
-    num {
+    number {
         ValueNode* node = new ValueNode();
         node->value = $1;
-        node->type = ValueNode::ValueType::CONSTANT;
-        $$ = node;
-    }
-    | '-' num {
-        ValueNode* node = new ValueNode();
-        node->value = -$2;
         node->type = ValueNode::ValueType::CONSTANT;
         $$ = node;
     }
@@ -422,6 +417,15 @@ value :
         }
 
         $$ = node;
+    }
+;
+
+number :
+    num {
+        $$ = $1;
+    }
+    | '-' num {
+        $$ = -$2;
     }
 ;
 
@@ -450,5 +454,5 @@ identifier :
 %%
 
 void yyerror(const char* s) {
-	fprintf(stderr, "Parse error: %s %d\n", s, yylineno);
+	fprintf(stderr, "ERROR: %s%d\n", s, yylineno);
 }

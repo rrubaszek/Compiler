@@ -41,29 +41,39 @@ symbol_entry* find_symbol(const std::string& name) {
     return nullptr; 
 }
 
-void add_symbol(const std::string& name, int address, std::optional<int> start_address, bool is_local, bool is_iterator, Type type) {
-    symbol_entry symbol = {address, start_address, is_iterator, type};
+void add_symbol(const std::string& name, int address, std::optional<int> start_address, bool is_local, bool is_iterator, Type type, int size) {
+    symbol_entry symbol = {address, start_address, is_iterator, type, size};
     if (is_local) {
         local_symbol_stack.top()[name] = symbol;
-        std::cout << "local" << name << " " << address << "\n";
+        std::cout << "local " << name << " " << address << "\n";
     } else {
         global_symbol_table[name] = symbol;
-        std::cout << "global" << name << " " << address << "\n";
+        std::cout << "global " << name << " " << address << "\n";
     }
 }
 
 void remove_symbol(const std::string& name) {
-    if (local_symbol_stack.empty()) {
-        throw std::runtime_error("Local symbol stack is empty. No local scope exists.");
+    if (is_local) {
+        if (local_symbol_stack.empty()) {
+            throw std::runtime_error("Local symbol stack is empty. No local scope exists.");
+        }
+
+        auto& current_local_table = local_symbol_stack.top();
+
+        auto it = current_local_table.find(name);
+        if (it != current_local_table.end()) {
+            current_local_table.erase(it); 
+        } else {
+            throw std::runtime_error("Symbol not found in the current local scope: " + name);
+        }
     }
-
-    auto& current_local_table = local_symbol_stack.top();
-
-    auto it = current_local_table.find(name);
-    if (it != current_local_table.end()) {
-        current_local_table.erase(it); 
-    } else {
-        throw std::runtime_error("Symbol not found in the current local scope: " + name);
+    else {
+        auto it = global_symbol_table.find(name);
+        if (it != global_symbol_table.end()) {
+            global_symbol_table.erase(it); 
+        } else {
+            throw std::runtime_error("Symbol not found in the global scope: " + name);
+        }
     }
 }
 
