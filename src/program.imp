@@ -1,34 +1,51 @@
-# Rozkład na czynniki pierwsze
-PROCEDURE check(n,d,p) IS
-  r
+# Równanie diofantyczne mx-ny=nwd(m,n) (z)
+
+PROCEDURE de(m,n,x,y,z) IS
+  a,b,r,s,reszta,iloraz,rr,ss,tmp
 BEGIN
-    p:=0;
-    r:=n%d;
-    WHILE r=0 DO
-        n:=n/d;
-        p:=p+1;
-        r:=n%d;
-    ENDWHILE
+  a:=m;
+  b:=n;
+  x:=1;
+  y:=0;
+  r:=n;
+  s:=m-1;
+  WHILE b>0 DO
+    # niezmiennik: NWD(m,n)=NWD(a,b) i a=mx-ny i b=mr-ns
+    reszta:=a%b;
+    iloraz:=a/b;
+    a:=b;
+    b:=reszta;
+    rr:=r;
+    tmp:=iloraz*r;
+    IF x<tmp THEN
+      r:=n*iloraz;
+    ELSE
+      r:=0;
+    ENDIF
+    r:=r+x;
+    r:=r-tmp;
+    ss:=s;
+    tmp:=iloraz*s;
+    IF y<tmp THEN
+      s:=m*iloraz;
+    ELSE
+      s:=0;
+    ENDIF
+    s:=s+y;
+    s:=s-tmp;
+    x:=rr;
+    y:=ss;
+  ENDWHILE
+  z:=a;
 END
 
 PROGRAM IS
-  n,m,potega,dzielnik
+  m,n,x,y,nwd
 BEGIN
+  READ m;
   READ n;
-  dzielnik:=2;
-  m:=dzielnik*dzielnik;
-  WHILE n>=m DO
-    check(n,dzielnik,potega);
-    IF potega>0 THEN 
-      WRITE dzielnik;
-      WRITE potega;
-    ENDIF
-    dzielnik:= dzielnik + 1;
-    m:=dzielnik * dzielnik;
-  ENDWHILE
-
-  IF n != 1 THEN 
-    WRITE n;
-    WRITE 1;
-  ENDIF
+  de(m,n,x,y,nwd);
+  WRITE x;
+  WRITE y;
+  WRITE nwd;
 END

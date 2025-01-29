@@ -23,8 +23,7 @@ void ValueNode::compile() {
                 if (index_name != "") {
                     auto index = find_symbol(index_name);
 
-                    program.emplace_back("LOAD", symbol->address);
-                    program.emplace_back("SUBI", find_symbol(name + "_index")->address);
+                    program.emplace_back("SET", symbol->address - symbol->start_address.value());
 
                     if (index->type == Type::POINTER) {
                         program.emplace_back("ADDI", index->address);

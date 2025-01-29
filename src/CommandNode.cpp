@@ -273,6 +273,20 @@ void CommandNode::compile_proc_call() {
             program.emplace_back("SET", id->address);
             program.emplace_back("STORE", 1 + argIndex);
         } 
+        else if (id->type == Type::POINTER) {
+            program.emplace_back("LOAD", id->address);
+            program.emplace_back("STORE", 1 + argIndex);
+        }
+        else if (id->type == Type::ARRAY_POINTER) {
+            // TODO: test this, seems to be working fine
+            program.emplace_back("LOAD", find_symbol(arg + "_index")->address);
+            program.emplace_back("STORE", 1 + argIndex);
+
+            argIndex++;
+
+            program.emplace_back("LOAD", id->address);
+            program.emplace_back("STORE", 1 + argIndex);
+        }
         else {
             program.emplace_back("SET", id->address);
             program.emplace_back("STORE", 1 + argIndex);

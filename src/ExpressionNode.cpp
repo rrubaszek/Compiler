@@ -352,14 +352,14 @@ void ExpressionNode::compile_div() {
     free_temp_register(b_addr);
 }
 void ExpressionNode::compile_mod() {
-    if (right->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
-        int mod = std::abs(right->value) % std::abs(left->value);
-        if (right->value < 0)
-            program.emplace_back("SET", mod - right->value);
-        else 
-            program.emplace_back("SET", mod);
-        return;
-    }
+    // if (right->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
+    //     int mod = std::abs(right->value) % std::abs(left->value);
+    //     if (right->value < 0)
+    //         program.emplace_back("SET", mod - right->value);
+    //     else 
+    //         program.emplace_back("SET", mod);
+    //     return;
+    // }
 
     int a_addr = allocate_temp_register();
     int b_addr = allocate_temp_register();
@@ -434,14 +434,16 @@ void ExpressionNode::compile_mod() {
     program.emplace_back("STORE", temp_addr);
     program.emplace_back("JUMP", -12);
 
+
+    // TODO: fix this stupid modulo operation
     // Set the right reminder
-    program.emplace_back("LOAD", remainder_addr);
-    program.emplace_back("JZERO", 6);
-    program.emplace_back("LOAD", sign_addr);
-    program.emplace_back("JPOS", 4);
-    program.emplace_back("LOAD", remainder_addr);
-    program.emplace_back("SUB", fix);
-    program.emplace_back("STORE", remainder_addr);
+    // program.emplace_back("LOAD", remainder_addr);
+    // program.emplace_back("JZERO", 6);
+    // program.emplace_back("LOAD", sign_addr);
+    // program.emplace_back("JPOS", 4);
+    // program.emplace_back("LOAD", remainder_addr);
+    // program.emplace_back("SUB", fix);
+    // program.emplace_back("STORE", remainder_addr);
 
     program.emplace_back("LOAD", remainder_addr);
 

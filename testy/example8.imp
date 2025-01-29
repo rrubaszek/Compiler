@@ -22,7 +22,7 @@ BEGIN
     WHILE j>1 DO
       k:=j-1;
       IF t[k]>x THEN
-        tab[j]:=tab[k];
+        t[j]:=t[k];
         j:=j-1;
       ELSE
         k:=j;
