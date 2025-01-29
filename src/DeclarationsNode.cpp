@@ -16,11 +16,15 @@ void DeclarationsNode::compile() {
             yyerror("Array with that name has already been declared, line: ");
             continue;
         }
+
+        add_symbol(array.name + "_index", allocate_register(), std::nullopt, is_local, false, VARIABLE, 1);
+        std::cout << "Allocated array, pre_value: " << next_free_register - 1 << "\n";
+
         int array_start = allocate_register();
         int array_size = array.end - array.start + 1; // TODO: fix arrays in procedures
         add_symbol(array.name, array_start, array.start, is_local, false, ARRAY, array_size);
         next_free_register += array_size;
-        std::cout << "Allocated array " << array.name << " " << array.start << " " << array.end << " " << next_free_register << "\n";
+        std::cout << "Allocated array, reg: " << array_start << " " << array.name << " [" << array.start << ":" << array.end << "] " << next_free_register << "\n";
 
         // TODO: fix arrays in procedures
         // First address in array holds inforamtion about start value [-10:10] -> -10

@@ -21,13 +21,22 @@ void ValueNode::compile() {
 
             if (symbol->type == Type::ARRAY) {
                 if (index_name != "") {
-                    int a = symbol->address - symbol->start_address.value();
-                    program.emplace_back("SET", a);
-                    program.emplace_back("ADD", find_symbol(index_name)->address);
-                    int temp = allocate_register();
+                    auto index = find_symbol(index_name);
+
+                    program.emplace_back("LOAD", symbol->address);
+                    program.emplace_back("SUBI", find_symbol(name + "_index")->address);
+
+                    if (index->type == Type::POINTER) {
+                        program.emplace_back("ADDI", index->address);
+                    }
+                    else {  
+                        program.emplace_back("ADD", index->address);
+                    }
+                    
+                    int temp = allocate_temp_register();
                     program.emplace_back("STORE", temp);
                     program.emplace_back("LOADI", temp);
-                    free_register(temp);
+                    free_temp_register(temp);
                 }
                 else {
                     int a = symbol->address - symbol->start_address.value() + index_value;
@@ -39,21 +48,31 @@ void ValueNode::compile() {
             // TODO: fix arrays in procedures, bc array_pointer does not have start_address
             if (symbol->type == Type::ARRAY_POINTER) {
                 if (index_name != "") {
-                    program.emplace_back("SET", -symbol->start_address.value());
-                    program.emplace_back("ADDI", symbol->address);
-                    program.emplace_back("ADD", find_symbol(index_name)->address);
-                    int temp = allocate_register();
+                    auto index = find_symbol(index_name);
+
+                    program.emplace_back("LOAD", symbol->address);
+                    program.emplace_back("SUBI", find_symbol(name + "_index")->address);
+
+                    if (index->type == Type::POINTER) {
+                        program.emplace_back("ADDI", index->address);
+                    }
+                    else {
+                        program.emplace_back("ADD", index->address); 
+                    }
+                    
+                    int temp = allocate_temp_register();
                     program.emplace_back("STORE", temp);
                     program.emplace_back("LOADI", temp);
-                    free_register(temp);
+                    free_temp_register(temp);
                 }
                 else {
-                    program.emplace_back("SET", index_value - symbol->start_address.value()); 
-                    program.emplace_back("ADDI", symbol->address); 
-                    int temp = allocate_register();
+                    program.emplace_back("SET", index_value); 
+                    program.emplace_back("ADD", symbol->address); 
+                    program.emplace_back("SUBI", find_symbol(name + "_index")->address);
+                    int temp = allocate_temp_register();
                     program.emplace_back("STORE", temp);
                     program.emplace_back("LOADI", temp);
-                    free_register(temp);
+                    free_temp_register(temp);
                 }
                 break;
             }

@@ -61,12 +61,12 @@ void ConditionNode::compile_eq() {
     }
 
     right->compile();
-    int temp = allocate_register();
+    int temp = allocate_temp_register();
     program.emplace_back("STORE", temp);
     left->compile();
     program.emplace_back("SUB", temp);
     program.emplace_back("JZERO", 2);
-    free_register(temp);    
+    free_temp_register(temp);    
 }
 
 void ConditionNode::compile_neq() {
@@ -121,13 +121,13 @@ void ConditionNode::compile_neq() {
     }
 
     right->compile();
-    int temp = allocate_register();
+    int temp = allocate_temp_register();
     program.emplace_back("STORE", temp);
     left->compile();
     program.emplace_back("SUB", temp);
     program.emplace_back("JZERO", 2);
     program.emplace_back("JUMP", 2);
-    free_register(temp);
+    free_temp_register(temp);
 }
 
 void ConditionNode::compile_gt() {
@@ -178,12 +178,12 @@ void ConditionNode::compile_gt() {
     }
 
     right->compile();
-    int temp = allocate_register();
+    int temp = allocate_temp_register();
     program.emplace_back("STORE", temp);
     left->compile();
     program.emplace_back("SUB", temp);
     program.emplace_back("JPOS", 2);
-    free_register(temp); 
+    free_temp_register(temp); 
 }
 
 void ConditionNode::compile_lt() {
@@ -234,12 +234,12 @@ void ConditionNode::compile_lt() {
     }
 
     right->compile();
-    int temp = allocate_register();
+    int temp = allocate_temp_register();
     program.emplace_back("STORE", temp);
     left->compile();
     program.emplace_back("SUB", temp);
     program.emplace_back("JNEG", 2);
-    free_register(temp); 
+    free_temp_register(temp); 
 }
 
 void ConditionNode::compile_geq() {
@@ -295,13 +295,13 @@ void ConditionNode::compile_geq() {
     }
 
     right->compile();
-    int temp = allocate_register();
+    int temp = allocate_temp_register();
     program.emplace_back("STORE", temp);
     left->compile();
     program.emplace_back("SUB", temp);
     program.emplace_back("JPOS", 3);
     program.emplace_back("JZERO", 2);
-    free_register(temp);
+    free_temp_register(temp);
 }
 
 void ConditionNode::compile_leq() {
@@ -357,11 +357,11 @@ void ConditionNode::compile_leq() {
     }
 
     right->compile();
-    int temp = allocate_register();
+    int temp = allocate_temp_register();
     program.emplace_back("STORE", temp);
     left->compile();
     program.emplace_back("SUB", temp);
     program.emplace_back("JNEG", 3);
     program.emplace_back("JZERO", 2);
-    free_register(temp);
+    free_temp_register(temp);
 }

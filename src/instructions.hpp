@@ -57,6 +57,7 @@ extern std::unordered_map<std::string, procedure> procedure_table;
 extern bool is_local;
 extern int yylineno;
 extern int next_free_register;
+extern int next_temp_free_register;
 extern void yyerror(const char* s);
 
 symbol_entry* find_symbol(const std::string& name);
@@ -68,5 +69,8 @@ void add_procedure(const std::string& name, int address, int relative_address, b
 
 int allocate_register();
 void free_register(int reg);
+
+int allocate_temp_register();
+void free_temp_register(int temp);
 
 Entity* _mod(Entity* a, Entity* b);

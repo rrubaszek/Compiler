@@ -7,7 +7,8 @@ std::stack<std::unordered_map<std::string, symbol_entry>> local_symbol_stack;
 std::vector<instruction> program;
 std::unordered_map<std::string, procedure> procedure_table;
 
-int next_free_register = 1;
+int next_temp_free_register = 1; //Those are for temporary calculations and temp variables
+int next_free_register = 11; //Those are for variables, arrays, pointers and so on
 bool is_local = false;
 
 void yyerror(const char *s);
@@ -109,8 +110,23 @@ int allocate_register() {
     return next_free_register++;
 }
 
+int allocate_temp_register() {
+    std::cout << "allocated temp: " << next_temp_free_register << "\n";
+    if (next_temp_free_register + 1 >= 10) {
+        std::cout << "Cannot allocate more temp registers\n";
+        return 0;
+    }
+    return next_temp_free_register++;
+}
+
 void free_register(int reg) {
     std::cout << "free register " << reg << "\n";
     if (next_free_register >= global_symbol_table.size())
         next_free_register--;
 }
+
+void free_temp_register(int temp) {
+    std::cout << "free temp register " << temp << "\n";
+    if (next_temp_free_register > 0)
+        next_temp_free_register--;
+} 
