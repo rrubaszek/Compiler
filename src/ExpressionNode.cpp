@@ -116,7 +116,7 @@ void ExpressionNode::compile_mul() {
         return;
     }
 
-    // if (left->type != ValueNode::ValueType::ARRAY_ELEMENT && right->value < 10 && right->value > 0) {
+    // if (left->type == ValueNode::ValueType::OTHER && right->value < 10 && right->value > 0) {
     //     left->compile();
     //     for (int i = 1; i < right->value; i++) {
     //         program.emplace_back("ADD", program[program.size()-1].operand);
@@ -370,25 +370,25 @@ void ExpressionNode::compile_mod() {
 
     right->compile();
     program.emplace_back("STORE", b_addr);
+    program.emplace_back("STORE", fix);
 
     int remainder_addr = allocate_temp_register(); 
     int temp_addr = allocate_temp_register();      
-    int sign_addr = allocate_temp_register();    
+    int sign_a = allocate_temp_register(); 
+    int sign_b = allocate_temp_register();  
 
     program.emplace_back("LOAD", b_addr);
-    program.emplace_back("JPOS", 7);       
+    program.emplace_back("JPOS", 6);       
     program.emplace_back("SET", -1);      
-    program.emplace_back("STORE", sign_addr);
+    program.emplace_back("STORE", sign_b);
     program.emplace_back("SET", 0);       
     program.emplace_back("SUB", b_addr);
     program.emplace_back("STORE", b_addr);
-    program.emplace_back("STORE", fix);
 
     program.emplace_back("LOAD", a_addr);
-    program.emplace_back("JPOS", 7);      
-    program.emplace_back("SET", 0); 
-    program.emplace_back("SUB", sign_addr);
-    program.emplace_back("STORE", sign_addr);
+    program.emplace_back("JPOS", 6);      
+    program.emplace_back("SET", -1); 
+    program.emplace_back("STORE", sign_a);
     program.emplace_back("SET", 0); 
     program.emplace_back("SUB", a_addr);
     program.emplace_back("STORE", a_addr);
@@ -437,18 +437,33 @@ void ExpressionNode::compile_mod() {
 
     // TODO: fix this stupid modulo operation
     // Set the right reminder
-    // program.emplace_back("LOAD", remainder_addr);
-    // program.emplace_back("JZERO", 6);
-    // program.emplace_back("LOAD", sign_addr);
-    // program.emplace_back("JPOS", 4);
-    // program.emplace_back("LOAD", remainder_addr);
-    // program.emplace_back("SUB", fix);
-    // program.emplace_back("STORE", remainder_addr);
-
+    program.emplace_back("LOAD", remainder_addr);
+    program.emplace_back("JZERO", 16);
+    program.emplace_back("LOAD", sign_a);
+    program.emplace_back("JZERO", 9);
+    program.emplace_back("LOAD", sign_b);
+    program.emplace_back("JZERO", 4);
+    // Both negative
+    program.emplace_back("SET", 0);
+    program.emplace_back("SUB", remainder_addr);
+    program.emplace_back("JUMP", 8);
+    // b positive
+    program.emplace_back("LOAD", fix);
+    program.emplace_back("SUB", remainder_addr);
+    program.emplace_back("JUMP", 5);
+    // a positive
+    program.emplace_back("LOAD", sign_b);
+    program.emplace_back("JZERO", 4);
+    program.emplace_back("LOAD", remainder_addr);
+    program.emplace_back("ADD", fix);
+    
+    // both positive
+    program.emplace_back("STORE", remainder_addr);
     program.emplace_back("LOAD", remainder_addr);
 
     free_temp_register(temp_addr);
-    free_temp_register(sign_addr);
+    free_temp_register(sign_a);
+    free_temp_register(sign_b);
     free_temp_register(remainder_addr);
     free_temp_register(a_addr);
     free_temp_register(b_addr);
