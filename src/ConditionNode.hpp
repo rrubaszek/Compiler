@@ -8,7 +8,7 @@ public:
     enum ConditionType { EQ, NEQ, GT, LT, GEQ, LEQ };
     enum ConditionResult { TRUE, FALSE, NONE };
     ConditionType type;
-    ConditionResult res;
+    ConditionResult res = NONE;
 
     ValueNode* left;
     ValueNode* right;

@@ -135,6 +135,16 @@ void CommandNode::compile_if_else() {
     auto& m_data = std::get<IfElseData>(data);
 
     m_data.condition->compile(); 
+    if (m_data.condition->res == ConditionNode::ConditionResult::TRUE) {
+        m_data.then_branch->compile();
+        return;
+    }
+    
+    if (m_data.condition->res == ConditionNode::ConditionResult::FALSE) {
+        m_data.else_branch->compile();
+        return;
+    }
+
     int jumpToElseIndex = program.size();
     program.emplace_back("JUMP", -1);
 
@@ -145,7 +155,7 @@ void CommandNode::compile_if_else() {
     program[jumpToElseIndex].operand = program.size() - jumpToElseIndex;
 
     m_data.else_branch->compile();  // Kompilacja bloku ELSE
-    
+
     program[jumpToEndIfIndex].operand =  program.size() - jumpToEndIfIndex;
 }
 
@@ -153,6 +163,16 @@ void CommandNode::compile_if() {
     auto& m_data = std::get<IfData>(data);
 
     m_data.condition->compile(); 
+
+    if (m_data.condition->res == ConditionNode::ConditionResult::FALSE) {
+        return;
+    }
+
+    if (m_data.condition->res == ConditionNode::ConditionResult::TRUE) {
+        m_data.then_branch->compile(); 
+        return;
+    }
+
     int jumpToEndIfIndex = program.size();
     program.emplace_back("JUMP", -1);
 
@@ -166,6 +186,18 @@ void CommandNode::compile_while() {
 
     int condIndex = program.size();
     m_data.condition->compile(); 
+
+    if (m_data.condition->res == ConditionNode::ConditionResult::FALSE) {
+        return;
+    }
+
+    if (m_data.condition->res == ConditionNode::ConditionResult::TRUE) {
+        m_data.loop_body->compile(); 
+        program.emplace_back("JUMP", condIndex - program.size());
+        throw_error("nieskończona pętla, linia: ", lineno);
+        return;
+    }
+
     int jumpToEndWhile = program.size();
     program.emplace_back("JUMP", -1);
 
@@ -182,6 +214,17 @@ void CommandNode::compile_repeat() {
     m_data.loop_body->compile(); 
 
     m_data.condition->compile(); 
+
+    if (m_data.condition->res == ConditionNode::ConditionResult::FALSE) {
+        program.emplace_back("JUMP", startBody- program.size());
+        throw_error("nieskończona pętla, linia: ", lineno);
+        return;
+    }
+
+    if (m_data.condition->res == ConditionNode::ConditionResult::TRUE) {
+        return;
+    }
+
     program.emplace_back("JUMP", startBody - program.size());
 }
 

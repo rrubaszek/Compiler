@@ -144,37 +144,59 @@ void ExpressionNode::compile_mul() {
         return;
     }
 
-    // if (left->type == ValueNode::ValueType::OTHER && right->value < 10 && right->value > 0) {
-    //     left->compile();
-    //     for (int i = 1; i < right->value; i++) {
-    //         program.emplace_back("ADD", program[program.size()-1].operand);
-    //     }
-    //     return;
-    // }
+    if (left->type == ValueNode::ValueType::CONSTANT && left->value > 0 && left->value < 10) {
+        auto symbol = find_symbol(right->name);
 
-    // if (left->type == ValueNode::ValueType::ARRAY_ELEMENT && right->value < 10 && right->value > 0) {
-    //     left->compile();
-    //     for (int i = 1; i < right->value; i++) {
-    //         program.emplace_back("ADDI", program[program.size()-1].operand);
-    //     }
-    //     return;
-    // }
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
 
-    // if (right->type != ValueNode::ValueType::ARRAY_ELEMENT && left->value < 10 && left->value > 0) {
-    //     right->compile();
-    //     for (int i = 1; i < left->value; i++) {
-    //         program.emplace_back("ADD", program[program.size()-1].operand);
-    //     }
-    //     return;
-    // }
+        if (symbol->type == Type::VARIABLE) {
+            right->compile();
+            for (int i = 1; i < left->value; i++) {
+                program.emplace_back("ADD", 0); 
+            }
+            return;
+        }
 
-    // if (right->type == ValueNode::ValueType::ARRAY_ELEMENT && left->value < 10 && left->value > 0) {
-    //     right->compile();
-    //     for (int i = 1; i < left->value; i++) {
-    //         program.emplace_back("ADDI", program[program.size()-1].operand);
-    //     }
-    //     return;
-    // }
+        if (symbol->type == Type::POINTER) {
+            right->compile();
+            for (int i = 1; i < left->value; i++) {
+                program.emplace_back("ADDI", 0); 
+            }
+            return;
+        }
+    }
+
+    if (right->type == ValueNode::ValueType::CONSTANT && right->value > 0 && right->value < 10) {
+        auto symbol = find_symbol(left->name);
+
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
+
+        if (symbol->type == Type::VARIABLE) {
+            left->compile();
+            for (int i = 1; i < right->value; i++) {
+                program.emplace_back("ADD", 0); 
+            }
+            return;
+        }
+
+        if (symbol->type == Type::POINTER) {
+            left->compile();
+            for (int i = 1; i < right->value; i++) {
+                program.emplace_back("ADDI", 0); 
+            }
+            return;
+        }
+    }
 
     int a_addr = allocate_temp_register();
     int b_addr = allocate_temp_register();
@@ -257,6 +279,7 @@ void ExpressionNode::compile_mul() {
     free_temp_register(a_addr);
     free_temp_register(b_addr);
 }
+
 void ExpressionNode::compile_div() {
     if (right->value == 2) {
         left->compile();

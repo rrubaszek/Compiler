@@ -21,7 +21,7 @@ void ConditionNode::compile_eq() {
             res = FALSE;
         }
         return;
-    }
+    };
 
     if (left->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(right->name);
