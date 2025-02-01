@@ -1,8 +1,15 @@
-PROGRAM IS
- a, b, res 
+# błąd: niezainicjowana zmienna d w linii 6
+PROCEDURE pa(T a, b) IS
+ c[0:5],d
 BEGIN
-  a:=21;
-  b:=-5;
-  res:=a%b;
-  WRITE res;
+  c[b]:=b;
+  a[4]:=c[d];
+END
+
+PROGRAM IS
+ a[1:10],b
+BEGIN
+  READ b;
+  pa(a,b);
+  WRITE a[b];
 END

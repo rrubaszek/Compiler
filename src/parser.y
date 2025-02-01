@@ -96,12 +96,12 @@ procedures :
     procedures PROCEDURE proc_head IS declarations _BEGIN commands END {
         $3->declarations = $5;
         $3->commands = $7;
-        temporary_procedures.push_back($3);
+        temporary_procedures.emplace_back($3);
         $$ = $3;
     }
     | procedures PROCEDURE proc_head IS _BEGIN commands END {
         $3->commands = $6;
-        temporary_procedures.push_back($3);
+        temporary_procedures.emplace_back($3);
         $$ = $3;
     }
     | {
@@ -143,6 +143,7 @@ command:
         data.left = $1;  
         data.right = $3; 
         node->data = data;
+        node->lineno = yylineno;
         $$ = node;
     }
     | IF condition THEN commands ELSE commands ENDIF {
@@ -204,7 +205,8 @@ command:
         node->data = data;
         $$ = node;
     }
-    | proc_call ';' {    
+    | proc_call ';' {   
+        $1->lineno = yylineno; 
         $$ = $1;
     }
     | READ identifier ';' {
@@ -213,6 +215,7 @@ command:
         CommandNode::ReadData data;
         data.target = $2; 
         node->data = data;
+        node->lineno = yylineno;
         $$ = node;
     }
     | WRITE value ';' {
@@ -221,6 +224,7 @@ command:
         CommandNode::WriteData data;
         data.value = $2;
         node->data = data;
+        node->lineno = yylineno;
         $$ = node;
     }
 ;
@@ -315,6 +319,7 @@ expression :
         ExpressionNode* node = new ExpressionNode();
         node->type = ExpressionNode::ExpressionType::VALUE;
         node->left = $1;
+        node->lineno = $1->lineno;
         $$ = node;
     }
     | value '+' value {
@@ -322,6 +327,7 @@ expression :
         node->type = ExpressionNode::ExpressionType::ADD;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
     | value '-' value {
@@ -329,6 +335,7 @@ expression :
         node->type = ExpressionNode::ExpressionType::SUB;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
     | value '*' value { 
@@ -336,6 +343,7 @@ expression :
         node->type = ExpressionNode::ExpressionType::MUL;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
     | value '/' value { 
@@ -343,6 +351,7 @@ expression :
         node->type = ExpressionNode::ExpressionType::DIV;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
     | value '%' value { 
@@ -350,6 +359,7 @@ expression :
         node->type = ExpressionNode::ExpressionType::MOD;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
 ;
@@ -360,6 +370,7 @@ condition :
         node->type = ConditionNode::ConditionType::EQ;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
     | value NEQ value {
@@ -367,6 +378,7 @@ condition :
         node->type = ConditionNode::ConditionType::NEQ;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
     | value GT value { 
@@ -374,6 +386,7 @@ condition :
         node->type = ConditionNode::ConditionType::GT;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
     | value LE value {
@@ -381,6 +394,7 @@ condition :
         node->type = ConditionNode::ConditionType::LT;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
     | value GEQ value {
@@ -388,6 +402,7 @@ condition :
         node->type = ConditionNode::ConditionType::GEQ;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
     | value LEQ value {
@@ -395,6 +410,7 @@ condition :
         node->type = ConditionNode::ConditionType::LEQ;
         node->left = $1;
         node->right = $3;
+        node->lineno = $1->lineno;
         $$ = node;
     }
 ;
@@ -404,16 +420,19 @@ value :
         ValueNode* node = new ValueNode();
         node->value = $1;
         node->type = ValueNode::ValueType::CONSTANT;
+        node->lineno = yylineno;
         $$ = node;
     }
     | identifier {
         ValueNode* node = new ValueNode();
         node->name = $1->name;
         node->type = ValueNode::ValueType::OTHER;
+        node->lineno = $1->lineno;
 
         if ($1->is_array) {
             node->index_name = $1->index_name;
             node->index_value = $1->index_value;
+            node->is_array = $1->is_array;
         }
 
         $$ = node;
@@ -433,6 +452,7 @@ identifier :
     pidentifier {
         IdentifierNode* node = new IdentifierNode();
         node->name = $1;
+        node->lineno = yylineno;
         $$ = node;
     }
     | pidentifier '[' pidentifier ']' {
@@ -440,6 +460,7 @@ identifier :
         node->name = $1;
         node->is_array = true;
         node->index_name = $3;
+        node->lineno = yylineno;
         $$ = node;
     }
     | pidentifier '[' num ']' {
@@ -447,6 +468,7 @@ identifier :
         node->name = $1;
         node->is_array = true;
         node->index_value = $3;
+        node->lineno = yylineno;
         $$ = node;
     }
 ;
@@ -454,5 +476,5 @@ identifier :
 %%
 
 void yyerror(const char* s) {
-	fprintf(stderr, "ERROR: %s%d\n", s, yylineno);
+	fprintf(stderr, "ERROR: parse error: %s\n", s);
 }

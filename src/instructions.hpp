@@ -38,6 +38,7 @@ struct symbol_entry {
 	int address;
 	std::optional<int> start_address; 
 	bool is_iterator;  
+	bool is_uninitialized;
 	Type type;
 	int size;
 };
@@ -47,6 +48,7 @@ struct procedure {
 	int address;
 	int relative_address; // Line no in program to calculate jumps for proc_call
 	bool is_called;
+	std::vector<std::pair<std::string, bool>> args;
 };
 
 extern std::vector<instruction> program;
@@ -58,14 +60,13 @@ extern bool is_local;
 extern int yylineno;
 extern int next_free_register;
 extern int next_temp_free_register;
-extern void yyerror(const char* s);
 
 symbol_entry* find_symbol(const std::string& name);
-void add_symbol(const std::string& name, int address, std::optional<int> start_address, bool is_local, bool is_iterator, Type type, int size);
+void add_symbol(const std::string& name, int address, std::optional<int> start_address, bool is_local, bool is_iterator, bool is_uninitialized, Type type, int size);
 void remove_symbol(const std::string& name);
 
 procedure* find_procedure(const std::string& name);
-void add_procedure(const std::string& name, int address, int relative_address, bool is_called);
+void add_procedure(const std::string& name, int address, int relative_address, bool is_called, std::vector<std::pair<std::string, bool>>& args);
 
 int allocate_register();
 void free_register(int reg);
@@ -73,4 +74,4 @@ void free_register(int reg);
 int allocate_temp_register();
 void free_temp_register(int temp);
 
-Entity* _mod(Entity* a, Entity* b);
+void throw_error(const std::string& s, int lineno);

@@ -26,6 +26,13 @@ void ExpressionNode::compile_add() {
     if (left->type == ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(right->name);
 
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
+
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", left->value);
             program.emplace_back("ADD", symbol->address); 
@@ -41,6 +48,13 @@ void ExpressionNode::compile_add() {
 
     if (right->type == ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(left->name);
+
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
 
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", right->value);
@@ -73,6 +87,13 @@ void ExpressionNode::compile_sub() {
     if (left->type == ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(right->name);
 
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
+
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", left->value);
             program.emplace_back("SUB", symbol->address); 
@@ -87,7 +108,14 @@ void ExpressionNode::compile_sub() {
     }
 
     if (right->type == ValueNode::ValueType::CONSTANT) {
-       auto symbol = find_symbol(left->name);
+        auto symbol = find_symbol(left->name);
+
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
 
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", -(right->value));

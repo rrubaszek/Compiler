@@ -11,18 +11,17 @@ int next_temp_free_register = 1; //Those are for temporary calculations and temp
 int next_free_register = 11; //Those are for variables, arrays, pointers and so on
 bool is_local = false;
 
-void yyerror(const char *s);
-
 procedure* find_procedure(const std::string& name) {
     auto it = procedure_table.find(name);
     if (it != procedure_table.end()) {
         return &it->second;
     }
+
     return nullptr;
 }
 
-void add_procedure(const std::string& name, int address, int relative_address, bool is_called) {
-    procedure proc = { name, address, relative_address, is_called }; 
+void add_procedure(const std::string& name, int address, int relative_address, bool is_called, std::vector<std::pair<std::string, bool>>& args) {
+    procedure proc = { name, address, relative_address, is_called, args }; 
     procedure_table[name] = proc;
 }
 
@@ -39,17 +38,16 @@ symbol_entry* find_symbol(const std::string& name) {
     if (it != global_symbol_table.end()) {
         return &it->second;
     }
+
     return nullptr; 
 }
 
-void add_symbol(const std::string& name, int address, std::optional<int> start_address, bool is_local, bool is_iterator, Type type, int size) {
-    symbol_entry symbol = {address, start_address, is_iterator, type, size};
+void add_symbol(const std::string& name, int address, std::optional<int> start_address, bool is_local, bool is_iterator, bool is_uninitialized, Type type, int size) {
+    symbol_entry symbol = {address, start_address, is_iterator, is_uninitialized, type, size};
     if (is_local) {
         local_symbol_stack.top()[name] = symbol;
-        std::cout << "local " << name << " " << address << "\n";
     } else {
         global_symbol_table[name] = symbol;
-        std::cout << "global " << name << " " << address << "\n";
     }
 }
 
@@ -64,7 +62,8 @@ void remove_symbol(const std::string& name) {
         auto it = current_local_table.find(name);
         if (it != current_local_table.end()) {
             current_local_table.erase(it); 
-        } else {
+        } 
+        else {
             throw std::runtime_error("Symbol not found in the current local scope: " + name);
         }
     }
@@ -72,61 +71,36 @@ void remove_symbol(const std::string& name) {
         auto it = global_symbol_table.find(name);
         if (it != global_symbol_table.end()) {
             global_symbol_table.erase(it); 
-        } else {
+        } 
+        else {
             throw std::runtime_error("Symbol not found in the global scope: " + name);
         }
     }
 }
 
-Entity* _mod(Entity* a, Entity* b) {
-    Entity* e = new Entity(-1, -1, "temp");
-    e->start_block_address = program.size(); 
-
-    int a_addr = a->address;
-    int b_addr = b->address;
-
-    if (a->address == -1 && b->address == -1) {
-        e->value = a->value % b->value;
-        return e;
-    }
-
-    if (a->address == -1 && b->address != -1) {
-        program.emplace_back("SET", a->value);
-        a_addr = allocate_register();
-        program.emplace_back("STORE", a_addr);
-    } else if (b->address == -1 && a->address != -1) {
-        program.emplace_back("SET", b->value);
-        b_addr = allocate_register();
-        program.emplace_back("STORE", b_addr);
-    }
-
-    // TODO: Implement rest of the modulo logic
-
-    return e;
-}
-
 int allocate_register() {
-    std::cout << "allocated: " << next_free_register << "\n";
     return next_free_register++;
 }
 
 int allocate_temp_register() {
-    std::cout << "allocated temp: " << next_temp_free_register << "\n";
     if (next_temp_free_register + 1 >= 10) {
-        std::cout << "Cannot allocate more temp registers\n";
-        return 0;
+        std::cerr << "Cannot allocate more temp registers\n";
+        exit(1);
     }
     return next_temp_free_register++;
 }
 
 void free_register(int reg) {
-    std::cout << "free register " << reg << "\n";
     if (next_free_register >= global_symbol_table.size())
         next_free_register--;
 }
 
 void free_temp_register(int temp) {
-    std::cout << "free temp register " << temp << "\n";
     if (next_temp_free_register > 0)
         next_temp_free_register--;
 } 
+
+void throw_error(const std::string& s, int lineno) {
+    std::cerr << "ERROR: " << s << lineno << std::endl;
+    //exit(1);
+}

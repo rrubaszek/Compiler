@@ -2,7 +2,6 @@
 #include "instructions.hpp"
 
 void ConditionNode::compile()  {
-    std::cout << type << "\n";
     switch (type) {
         case EQ: compile_eq(); break;
         case NEQ: compile_neq(); break;
@@ -27,6 +26,13 @@ void ConditionNode::compile_eq() {
     if (left->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(right->name);
 
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
+
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", left->value);
             program.emplace_back("SUB", symbol->address);
@@ -44,6 +50,13 @@ void ConditionNode::compile_eq() {
     
     if (right->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(left->name);
+
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
 
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", right->value);
@@ -83,6 +96,13 @@ void ConditionNode::compile_neq() {
     if (left->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(right->name);
 
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
+
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", left->value);
             program.emplace_back("SUB", symbol->address);
@@ -102,6 +122,13 @@ void ConditionNode::compile_neq() {
     
     if (right->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(left->name);
+
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
 
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", right->value);
@@ -144,6 +171,13 @@ void ConditionNode::compile_gt() {
     if (left->type == ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(right->name);
 
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
+
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", left->value);
             program.emplace_back("SUB", symbol->address);
@@ -161,6 +195,13 @@ void ConditionNode::compile_gt() {
     
     if (right->type == ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(left->name);
+
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
 
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", right->value);
@@ -200,6 +241,13 @@ void ConditionNode::compile_lt() {
     if (left->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(right->name);
 
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
+
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", left->value);
             program.emplace_back("SUB", symbol->address);
@@ -217,6 +265,13 @@ void ConditionNode::compile_lt() {
     
     if (right->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(left->name);
+
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
 
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", right->value);
@@ -256,6 +311,13 @@ void ConditionNode::compile_geq() {
     if (left->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(right->name);
 
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
+
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", left->value);
             program.emplace_back("SUB", symbol->address);
@@ -276,6 +338,13 @@ void ConditionNode::compile_geq() {
     
     if (right->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(left->name);
+
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
 
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", right->value);
@@ -318,6 +387,13 @@ void ConditionNode::compile_leq() {
     if (left->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(right->name);
 
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
+
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", left->value);
             program.emplace_back("SUB", symbol->address);
@@ -338,6 +414,13 @@ void ConditionNode::compile_leq() {
     
     if (right->type ==  ValueNode::ValueType::CONSTANT) {
         auto symbol = find_symbol(left->name);
+
+        if (symbol == nullptr) {
+            throw_error("niezadeklarowana zmienna, linia: ", lineno);
+        }
+        if (symbol->is_uninitialized) {
+            throw_error("niezainicjalizowana zmienna, linia: ", lineno);
+        }
 
         if (symbol->type == Type::VARIABLE) {
             program.emplace_back("SET", right->value);

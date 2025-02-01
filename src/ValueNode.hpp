@@ -8,6 +8,7 @@ public:
     enum ValueType { CONSTANT, OTHER };
     ValueType type;
 
+    bool is_array = false;
     int value;
     int index_value;
     std::string name;
