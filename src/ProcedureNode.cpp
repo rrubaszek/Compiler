@@ -6,6 +6,11 @@ void ProcedureNode::compile() {
 
     int proc_register = allocate_register();
     int relative_address = program.size() + 1;
+    
+    add_procedure(name, proc_register, relative_address, false, args); // Set is_called to false, if later encountered then change to true
+    called_procedures.push(name);
+
+    std::cout << "Added to stack: " << called_procedures.top() << "\n";
 
     is_local = true;
     local_symbol_stack.push({});
@@ -32,8 +37,6 @@ void ProcedureNode::compile() {
     if (commands != nullptr) {
         commands->compile();
     }
-
-    add_procedure(name, proc_register, relative_address, false, args); // Set is_called to false, if later encountered then change to true
 
     program.emplace_back("RTRN", find_procedure(name)->address);
     program[procedureStart].operand = program.size() - start;

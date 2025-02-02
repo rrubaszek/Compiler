@@ -320,7 +320,17 @@ void CommandNode::compile_proc_call() {
         throw_error("niezadeklarowana procedura " + m_data.name + ", linia: ", lineno);
     }
 
-    proc->is_called = true;
+    std::cout << "Calling procedure: " << proc->name << " ";
+ 
+    auto current_proc = find_procedure(called_procedures.top());
+
+    if (current_proc->name == proc->name) {
+        throw_error("niezdefiniowana procedura " + proc->name + ", linia: ", lineno);
+        return; // This prevents recursion
+    }
+
+    std::cout << "from procedure: " << current_proc->name << "\n";
+    current_proc->procs_called_by.push_back(proc->name);
 
     int current_arg = 0;
     int argIndex = proc->address;

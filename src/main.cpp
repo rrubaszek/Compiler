@@ -47,6 +47,7 @@ int main(int argc, char* argv[]) {
         std::ofstream outfile("output.mr");
         if (outfile.is_open()) {
             for (const auto& [command, value] : program) { // TODO: maybe check if can be improved/cleaned-up
+                if (command == "REMOVE") continue;
                 outfile << command << " ";
                 if (value.has_value()) 
                     outfile << value.value();

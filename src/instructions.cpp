@@ -1,6 +1,9 @@
 #include "instructions.hpp"
 
 #include <iostream>
+#include <algorithm>
+
+std::stack<std::string> called_procedures;
 
 std::unordered_map<std::string, symbol_entry> global_symbol_table;
 std::stack<std::unordered_map<std::string, symbol_entry>> local_symbol_stack;
@@ -21,7 +24,7 @@ procedure* find_procedure(const std::string& name) {
 }
 
 void add_procedure(const std::string& name, int address, int relative_address, bool is_called, std::vector<std::pair<std::string, bool>>& args) {
-    procedure proc = { name, address, relative_address, is_called, args }; 
+    procedure proc = { name, address, relative_address, is_called, std::vector<std::string>(), args }; 
     procedure_table[name] = proc;
 }
 
@@ -103,4 +106,67 @@ void free_temp_register(int temp) {
 void throw_error(const std::string& s, int lineno) {
     std::cerr << "ERROR: " << s << lineno << std::endl;
     //exit(1);
+}
+
+void mark_called_procs(const std::string& name) {
+	auto curr_proc = find_procedure(name);
+    if (curr_proc == nullptr) return;
+
+    if (curr_proc->is_called) return;
+    curr_proc->is_called = true;
+
+    std::cout << "Procedure " << name << " marked as called\n";
+    
+    for (const auto& proc_child : curr_proc->procs_called_by) {
+        mark_called_procs(proc_child);
+    }
+}
+
+void remove_unused_procs() {
+    std::unordered_map<int, int> address_shift; // Mapa przesunięć po usunięciu procedur
+    int shift = 0;
+
+    for (auto it = procedure_table.begin(); it != procedure_table.end(); ) {
+        auto& proc = it->second;
+
+        if (!proc.is_called) {
+            std::cout << "Removing procedure " << proc.name << "\n";
+            auto procedureStart = program.begin() + proc.relative_address - 1;
+
+            auto procedureEnd = std::find_if(
+                procedureStart, program.end(),
+                [](const instruction& instr) {
+                    return instr.opcode == "RTRN";
+                }
+            );
+
+            if (procedureEnd != program.end()) {
+                for (auto i = procedureStart; i <= procedureEnd; i++) {
+                    *i = {"REMOVE"};
+                }
+            }
+
+            shift += std::distance(procedureStart, procedureEnd);
+
+            it = procedure_table.erase(it); 
+        } 
+        else {
+            address_shift[proc.relative_address] = shift;
+            ++it; 
+        }
+    }
+
+
+    for (auto& instr : program) {
+        if (instr.opcode == "JUMP_PROCEDURE") {
+            int old_target = instr.operand.value() + &instr - &program[0]; // Oryginalna linia
+            if (address_shift.find(old_target) != address_shift.end()) {
+                instr.operand.value() += address_shift[old_target] - 2; // Korekta o przesunięcie
+                instr.opcode = "JUMP";
+            }
+        }
+    }
+
+    program.erase(std::remove_if(program.begin(), program.end(),
+                    [](const instruction& instr) { return instr.opcode == "REMOVE"; }), program.end());
 }

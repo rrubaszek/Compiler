@@ -48,8 +48,11 @@ struct procedure {
 	int address;
 	int relative_address; // Line no in program to calculate jumps for proc_call
 	bool is_called;
+	std::vector<std::string> procs_called_by;
 	std::vector<std::pair<std::string, bool>> args;
 };
+
+extern std::stack<std::string> called_procedures;
 
 extern std::vector<instruction> program;
 extern std::unordered_map<std::string, symbol_entry> global_symbol_table;
@@ -75,3 +78,6 @@ int allocate_temp_register();
 void free_temp_register(int temp);
 
 void throw_error(const std::string& s, int lineno);
+
+void mark_called_procs(const std::string& name);
+void remove_unused_procs();
