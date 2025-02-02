@@ -2,16 +2,24 @@
 #include "instructions.hpp"
 
 void ProcedureNode::compile() {
-    int start = program.size();
+    if (first_pass) {
+        int relative_address = program.size() + 1;
+        ll proc_register = allocate_register();
+        add_procedure(name, proc_register, relative_address, false, args); // Set is_called to false, if later encountered then change to true
+        called_procedures.push(name);
+    }
 
-    int proc_register = allocate_register();
-    int relative_address = program.size() + 1;
+    auto proc = find_procedure(name);
+    if (proc == nullptr) {
+        return; // Procedure has been removed in preprocessing
+    }
+    else {
+        // Here you need to fix procedure parameter after removing other
+        auto proc = find_procedure(name);
+        proc->address = allocate_register();
+        proc->relative_address = program.size() + 1;
+    }
     
-    add_procedure(name, proc_register, relative_address, false, args); // Set is_called to false, if later encountered then change to true
-    called_procedures.push(name);
-
-    std::cout << "Added to stack: " << called_procedures.top() << "\n";
-
     is_local = true;
     local_symbol_stack.push({});
 
@@ -26,6 +34,7 @@ void ProcedureNode::compile() {
         }
     }
 
+    int start = program.size();
     // Placeholder to skip procedure
     int procedureStart = program.size();
     program.emplace_back("JUMP", -1);

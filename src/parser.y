@@ -463,7 +463,7 @@ identifier :
         node->lineno = yylineno;
         $$ = node;
     }
-    | pidentifier '[' num ']' {
+    | pidentifier '[' number ']' {
         IdentifierNode* node = new IdentifierNode();
         node->name = $1;
         node->is_array = true;

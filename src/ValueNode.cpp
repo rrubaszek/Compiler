@@ -1,6 +1,8 @@
 #include "ValueNode.hpp"
 #include "instructions.hpp"
 
+#include <limits>
+
 void ValueNode::compile() {
     switch (type) {
         case CONSTANT:
@@ -57,8 +59,30 @@ void ValueNode::compile() {
                         free_temp_register(temp);
                     }
                     else {
-                        int a = symbol->address - symbol->start_address.value() + index_value;
-                        program.emplace_back("LOAD", a); 
+                        if (index_value < symbol->start_address.value()) {
+                            throw_error("indeks poza zakresem tablicy, linia: ", lineno);
+                        }
+
+                        if (index_value > std::numeric_limits<ll>::max() - symbol->address
+                            || std::abs(symbol->start_address.value()) > std::numeric_limits<ll>::max() - symbol->address) {
+                            program.emplace_back("SET", index_value);
+                            int temp = allocate_temp_register();
+                            program.emplace_back("STORE", temp);
+                            program.emplace_back("SET", symbol->start_address.value());
+                            int temp2 = allocate_temp_register();
+                            program.emplace_back("STORE", temp2);
+                            program.emplace_back("SET", symbol->address);
+                            program.emplace_back("ADD", temp);
+                            program.emplace_back("SUB", temp2);
+                            program.emplace_back("STORE", temp);
+                            program.emplace_back("LOADI", temp);
+                            free_temp_register(temp);
+                            free_temp_register(temp2);
+                        }
+                        else {
+                            ll a = symbol->address - symbol->start_address.value() + index_value;
+                            program.emplace_back("LOAD", a); 
+                        }
                     }
                     break;
                 }

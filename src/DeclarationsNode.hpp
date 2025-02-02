@@ -6,8 +6,8 @@ class DeclarationsNode : public Node {
 public:
     struct ArrayDeclarations {
         std::string name; 
-        int start;         
-        int end;
+        ll start;         
+        ll end;
     };
 
     std::vector<std::string> variables;

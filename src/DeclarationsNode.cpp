@@ -17,10 +17,15 @@ void DeclarationsNode::compile() {
             continue;
         }
 
+        if (array.start > array.end) {
+            throw_error("błąd przy deklaracji tablicy, linia: ", lineno);
+            continue;
+        }
+
         add_symbol(array.name + "_index", allocate_register(), std::nullopt, is_local, false, false, VARIABLE, 1);
 
-        int array_start = allocate_register();
-        int array_size = array.end - array.start + 1;
+        ll array_start = allocate_register();
+        ll array_size = array.end - array.start + 1;
         add_symbol(array.name, array_start, array.start, is_local, false, false, ARRAY, array_size);
         next_free_register += array_size;
     }

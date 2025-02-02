@@ -9,8 +9,8 @@ public:
     ValueType type;
 
     bool is_array = false;
-    int value;
-    int index_value;
+    ll value;
+    ll index_value;
     std::string name;
     std::string index_name;
 

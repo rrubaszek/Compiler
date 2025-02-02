@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic -O3 
+CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic -O2
 
 # Tools
 BISON = bison
@@ -16,7 +16,7 @@ BISON_CPP = parser.tab.cpp
 BISON_HEADER = parser.tab.hpp
 FLEX_CPP = lexer.yy.cpp
 
-SRC_FILES = instructions.cpp ArgsNode.cpp CommandsNode.cpp CommandNode.cpp DeclarationsNode.cpp ExpressionNode.cpp ConditionNode.cpp IdentifierNode.cpp MainNode.cpp ValueNode.cpp ProcedureNode.cpp ProgramNode.cpp
+SRC_FILES = instructions.cpp CommandsNode.cpp CommandNode.cpp DeclarationsNode.cpp ExpressionNode.cpp ConditionNode.cpp IdentifierNode.cpp MainNode.cpp ValueNode.cpp ProcedureNode.cpp ProgramNode.cpp
 
 OBJ_FILES = $(SRC_FILES:.cpp=.o)
 

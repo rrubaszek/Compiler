@@ -35,7 +35,7 @@ PROGRAM IS
 BEGIN
   READ a;
   READ b;
-  pd(a, b);
+  pa(a,b);
   WRITE a;
   WRITE b;
 END

@@ -1,6 +1,8 @@
 #include "ExpressionNode.hpp"
 #include "instructions.hpp"
 
+#include <limits>
+
 void ExpressionNode::compile()  {
     switch (type) {
         case VALUE: compile_value(); break;
@@ -19,11 +21,17 @@ void ExpressionNode::compile_value() {
 
 void ExpressionNode::compile_add() {
     if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
-        program.emplace_back("SET", left->value + right->value);
-        return;
+        if ((right->value > 0 && left->value > (std::numeric_limits<ll>::max() - right->value)) ||
+            (right->value < 0 && left->value < (std::numeric_limits<ll>::min() - right->value))) {
+                std::cout << "Overflow\n";
+        }
+        else {
+            program.emplace_back("SET", right->value + left->value);
+            return;
+        }
     }
 
-    if (left->type == ValueNode::ValueType::CONSTANT) {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::OTHER) {
         auto symbol = find_symbol(right->name);
 
         if (symbol == nullptr) {
@@ -46,7 +54,7 @@ void ExpressionNode::compile_add() {
         }
     }
 
-    if (right->type == ValueNode::ValueType::CONSTANT) {
+    if (right->type == ValueNode::ValueType::CONSTANT && left->type == ValueNode::ValueType::OTHER) {
         auto symbol = find_symbol(left->name);
 
         if (symbol == nullptr) {
@@ -69,7 +77,6 @@ void ExpressionNode::compile_add() {
         }
     }
 
-    // TODO: maybe this can be shortened
     right->compile();
     int temp = allocate_temp_register();
     program.emplace_back("STORE", temp);
@@ -80,11 +87,17 @@ void ExpressionNode::compile_add() {
 
 void ExpressionNode::compile_sub() {
     if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
-        program.emplace_back("SET", left->value - right->value);
-        return;
+        if ((right->value > 0 && left->value < std::numeric_limits<int64_t>::min() + right->value) ||  
+            (right->value < 0 && left->value > std::numeric_limits<int64_t>::max() + right->value)) {  
+            std::cout << "Overflow\n";
+        } 
+        else {
+            program.emplace_back("SET", left->value - right->value);
+            return;
+        }
     }
 
-    if (left->type == ValueNode::ValueType::CONSTANT) {
+    if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::OTHER) {
         auto symbol = find_symbol(right->name);
 
         if (symbol == nullptr) {
@@ -107,7 +120,7 @@ void ExpressionNode::compile_sub() {
         }
     }
 
-    if (right->type == ValueNode::ValueType::CONSTANT) {
+    if (right->type == ValueNode::ValueType::CONSTANT && left->type == ValueNode::ValueType::OTHER) {
         auto symbol = find_symbol(left->name);
 
         if (symbol == nullptr) {
@@ -140,8 +153,16 @@ void ExpressionNode::compile_sub() {
 }
 void ExpressionNode::compile_mul() {
     if (left->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
-        program.emplace_back("SET", right->value * left->value); // TODO: Fix constant expressions if they go out of range
-        return;
+        if ((right->value > 0 && left->value > 0 && right->value > (std::numeric_limits<ll>::max() / left->value)) ||
+            (right->value < 0 && left->value < 0 && right->value < (std::numeric_limits<ll>::max() / left->value)) ||
+            (right->value > 0 && left->value < 0 && left->value < (std::numeric_limits<ll>::min() / right->value)) ||
+            (right->value < 0 && left->value > 0 && right->value < (std::numeric_limits<ll>::min() / left->value))) {
+            std::cout << "Overflow\n";
+        }
+        else {
+            program.emplace_back("SET", right->value * left->value);
+            return;
+        }
     }
 
     if (left->type == ValueNode::ValueType::CONSTANT && left->value > 0 && left->value < 10) {
@@ -287,12 +308,16 @@ void ExpressionNode::compile_div() {
         return;
     }
 
-    // Entities has value only for constants
     if (right->type == ValueNode::ValueType::CONSTANT && right->type == ValueNode::ValueType::CONSTANT) {
-        if (right->value < 0)
-            program.emplace_back("SET", right->value / left->value + 1);
-        else 
-            program.emplace_back("SET", right->value / left->value);
+        if (right->value == 0) {
+            program.emplace_back("SET", 0);
+        }
+        else if ((right->value ^ left->value) < 0) {
+            program.emplace_back("SET", left->value / right->value - 1);
+        }
+        else {
+            program.emplace_back("SET", left->value / right->value);
+        }
         return;
     }
 
@@ -304,6 +329,7 @@ void ExpressionNode::compile_div() {
 
     right->compile();
     program.emplace_back("STORE", b_addr);
+    program.emplace_back("JZERO", 67);
 
     int quotient_addr = allocate_temp_register(); 
     int remainder_addr = allocate_temp_register(); 
@@ -421,6 +447,7 @@ void ExpressionNode::compile_mod() {
 
     right->compile();
     program.emplace_back("STORE", b_addr);
+    program.emplace_back("JZERO", 66);
     program.emplace_back("STORE", fix);
 
     int remainder_addr = allocate_temp_register(); 
@@ -486,7 +513,6 @@ void ExpressionNode::compile_mod() {
     program.emplace_back("JUMP", -12);
 
 
-    // TODO: fix this stupid modulo operation
     // Set the right reminder
     program.emplace_back("LOAD", remainder_addr);
     program.emplace_back("JZERO", 16);

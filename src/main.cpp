@@ -28,6 +28,27 @@
 extern FILE* yyin;
 extern int yyparse();
 
+void preprocessing() {
+    first_pass = true;
+    if (yyparse() == 0) {
+        std::cerr << "Preprocessing successful\n";
+    }
+    else {
+        std::cerr << "Preprocessing failed\n";
+        exit(1);
+    }
+
+    mark_called_procs("main");
+    remove_unused_procs(); 
+    rewind(yyin);
+    first_pass = false;
+    is_local = false;
+    next_free_register = 11;
+    next_temp_free_register = 1;
+    program.clear();
+    global_symbol_table.clear();
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
@@ -41,13 +62,14 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    preprocessing();
+    
     if (yyparse() == 0) {
         std::cout << "Parsing successful" << std::endl;
 
         std::ofstream outfile("output.mr");
         if (outfile.is_open()) {
             for (const auto& [command, value] : program) { // TODO: maybe check if can be improved/cleaned-up
-                if (command == "REMOVE") continue;
                 outfile << command << " ";
                 if (value.has_value()) 
                     outfile << value.value();

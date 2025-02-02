@@ -2,6 +2,8 @@
 #include "CommandsNode.hpp"
 #include "instructions.hpp"
 
+#include <limits>
+
 void CommandNode::compile() {
     switch (type) {
         case ASSIGN: compile_assign(); break;
@@ -77,9 +79,32 @@ void CommandNode::compile_assign() {
                 free_temp_register(temp);
             }
             else {
-                int a = left->address - left->start_address.value() + m_data.left->index_value;
-                m_data.right->compile();
-                program.emplace_back("STORE", a); 
+                if (m_data.left->index_value < left->start_address.value()) {
+                    throw_error("indeks poza zakresem tablicy, linia: ", lineno);
+                }
+
+                if (m_data.left->index_value > std::numeric_limits<ll>::max() - left->address
+                    || std::abs(left->start_address.value()) > std::numeric_limits<ll>::max() - left->address) {
+                    program.emplace_back("SET", m_data.left->index_value);
+                    int temp = allocate_temp_register();
+                    program.emplace_back("STORE", temp);
+                    program.emplace_back("SET", left->start_address.value());
+                    int temp2 = allocate_temp_register();
+                    program.emplace_back("STORE", temp2);
+                    program.emplace_back("SET", left->address);
+                    program.emplace_back("ADD", temp);
+                    program.emplace_back("SUB", temp2);
+                    program.emplace_back("STORE", temp);
+                    m_data.right->compile();
+                    program.emplace_back("STOREI", temp);
+                    free_temp_register(temp);
+                    free_temp_register(temp2);
+                }
+                else {
+                    ll a = left->address - left->start_address.value() + m_data.left->index_value;
+                    m_data.right->compile();
+                    program.emplace_back("STORE", a); 
+                }
             }
             return;
         }
@@ -115,7 +140,7 @@ void CommandNode::compile_assign() {
             else {
                 auto array_value = find_symbol(m_data.left->name + "_index");
                 program.emplace_back("SET", m_data.left->index_value);
-                program.emplace_back("ADDI", left->address);
+                program.emplace_back("ADD", left->address);
                 program.emplace_back("SUBI", array_value->address); // Constains information of array start index (-10 eg)
 
                 int temp = allocate_temp_register();
@@ -252,7 +277,7 @@ void CommandNode::compile_for() {
     m_data.end_value->compile();
     program.emplace_back("SUB", symbol->address);
     int condition = program.size();
-    program.emplace_back("JZERO", -1);
+    program.emplace_back("JNEG", -1);
 
     m_data.loop_body->compile();
 
@@ -294,7 +319,7 @@ void CommandNode::compile_for_rev() {
     m_data.end_value->compile();
     program.emplace_back("SUB", symbol->address);
     int condition = program.size();
-    program.emplace_back("JZERO", -1);
+    program.emplace_back("JPOS", -1);
 
     m_data.loop_body->compile();
 
@@ -320,17 +345,14 @@ void CommandNode::compile_proc_call() {
         throw_error("niezadeklarowana procedura " + m_data.name + ", linia: ", lineno);
     }
 
-    std::cout << "Calling procedure: " << proc->name << " ";
- 
-    auto current_proc = find_procedure(called_procedures.top());
-
-    if (current_proc->name == proc->name) {
-        throw_error("niezdefiniowana procedura " + proc->name + ", linia: ", lineno);
-        return; // This prevents recursion
+    if (first_pass) {
+        auto current_proc = find_procedure(called_procedures.top());
+        if (current_proc->name == proc->name) {
+            throw_error("niezdefiniowana procedura " + proc->name + ", linia: ", lineno);
+            return; // This prevents recursion
+        }
+        current_proc->procs_called_by.push_back(proc->name);
     }
-
-    std::cout << "from procedure: " << current_proc->name << "\n";
-    current_proc->procs_called_by.push_back(proc->name);
 
     int current_arg = 0;
     int argIndex = proc->address;
@@ -442,13 +464,31 @@ void CommandNode::compile_read() {
                 free_temp_register(temp);
             }
             else { 
-                int a = symbol->address - symbol->start_address.value() + m_data.target->index_value;
-
-                if (a < symbol->start_address || a > symbol->size + std::abs(symbol->start_address.value())) {
+                if (m_data.target->index_value < symbol->start_address.value()) {
                     throw_error("indeks poza zakresem tablicy, linia: ", lineno);
                 }
 
-                program.emplace_back("GET", a); 
+                if (m_data.target->index_value > std::numeric_limits<ll>::max() - symbol->address
+                    || std::abs(symbol->start_address.value()) > std::numeric_limits<ll>::max() - symbol->address) {
+                    program.emplace_back("SET", m_data.target->index_value);
+                    int temp = allocate_temp_register();
+                    program.emplace_back("STORE", temp);
+                    program.emplace_back("SET", symbol->start_address.value());
+                    int temp2 = allocate_temp_register();
+                    program.emplace_back("STORE", temp2);
+                    program.emplace_back("SET", symbol->address);
+                    program.emplace_back("ADD", temp);
+                    program.emplace_back("SUB", temp2);
+                    program.emplace_back("STORE", temp);
+                    program.emplace_back("GET", 0);
+                    program.emplace_back("STOREI", temp);
+                    free_temp_register(temp);
+                    free_temp_register(temp2);
+                }
+                else {
+                    ll a = symbol->address - symbol->start_address.value() + m_data.target->index_value;
+                    program.emplace_back("GET", a); 
+                }
             }
             return;
         }
@@ -560,13 +600,31 @@ void CommandNode::compile_write() {
                 free_temp_register(temp);
             }
             else { 
-                int a = symbol->address - symbol->start_address.value() + m_data.value->index_value;
-
-                if (a < symbol->start_address || a > symbol->size + std::abs(symbol->start_address.value())) {
+                if (m_data.value->index_value < symbol->start_address.value()) {
                     throw_error("indeks poza zakresem tablicy, linia: ", lineno);
                 }
 
-                program.emplace_back("PUT", a); 
+                if (m_data.value->index_value > std::numeric_limits<ll>::max() - symbol->address
+                    || std::abs(symbol->start_address.value()) > std::numeric_limits<ll>::max() - symbol->address) {
+                    program.emplace_back("SET", m_data.value->index_value);
+                    int temp = allocate_temp_register();
+                    program.emplace_back("STORE", temp);
+                    program.emplace_back("SET", symbol->start_address.value());
+                    int temp2 = allocate_temp_register();
+                    program.emplace_back("STORE", temp2);
+                    program.emplace_back("SET", symbol->address);
+                    program.emplace_back("ADD", temp);
+                    program.emplace_back("SUB", temp2);
+                    program.emplace_back("STORE", temp);
+                    program.emplace_back("LOADI", temp);
+                    program.emplace_back("PUT", 0);
+                    free_temp_register(temp);
+                    free_temp_register(temp2);
+                }
+                else {
+                    ll a = symbol->address - symbol->start_address.value() + m_data.value->index_value;
+                    program.emplace_back("PUT", a); 
+                }
             }
             return;
         }
