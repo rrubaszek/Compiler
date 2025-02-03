@@ -113,6 +113,8 @@ void mark_called_procs(const std::string& name) {
 	auto curr_proc = find_procedure(name);
     if (curr_proc == nullptr) return;
 
+    std::cout << "Marked as called: " << name << "\n";
+
     if (curr_proc->is_called) return;
     curr_proc->is_called = true;
     
@@ -126,6 +128,7 @@ void remove_unused_procs() {
         auto& proc = it->second;
 
         if (!proc.is_called) {
+            std::cout << "Removed procedure: " << proc.name << "\n";
             it = procedure_table.erase(it); 
         } 
         else {

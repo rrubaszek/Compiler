@@ -12,7 +12,9 @@ public:
     ValueNode* right;
 
     ExpressionNode() = default;
+    ~ExpressionNode();
     void compile() override;
+    void preprocessing() override {};
 
 private:
     void compile_value();

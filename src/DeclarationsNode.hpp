@@ -14,5 +14,7 @@ public:
     std::vector<ArrayDeclarations> arrays;
 
     DeclarationsNode() = default;
+    ~DeclarationsNode() = default;
     void compile() override;
+    void preprocessing() override {};
 };

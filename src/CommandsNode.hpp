@@ -8,5 +8,7 @@ public:
     std::vector<CommandNode*> commands;
 
     CommandsNode() = default;
+    ~CommandsNode();
     void compile() override;
+    void preprocessing() override;
 };

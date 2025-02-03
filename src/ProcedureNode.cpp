@@ -1,14 +1,20 @@
 #include "ProcedureNode.hpp"
 #include "instructions.hpp"
 
-void ProcedureNode::compile() {
-    if (first_pass) {
-        int relative_address = program.size() + 1;
-        ll proc_register = allocate_register();
-        add_procedure(name, proc_register, relative_address, false, args); // Set is_called to false, if later encountered then change to true
-        called_procedures.push(name);
-    }
+ProcedureNode::~ProcedureNode() {
+    delete declarations;
+    delete commands;
+}
 
+void ProcedureNode::preprocessing() {
+        ll proc_register = allocate_register();
+        add_procedure(name, proc_register, 0, false, args); // Set is_called to false, if later encountered then change to true
+        called_procedures.push(name);
+
+        commands->preprocessing();
+}
+
+void ProcedureNode::compile() {
     auto proc = find_procedure(name);
     if (proc == nullptr) {
         return; // Procedure has been removed in preprocessing

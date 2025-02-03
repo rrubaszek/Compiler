@@ -12,5 +12,7 @@ public:
     CommandsNode* commands;
 
     ProcedureNode() = default;
+    ~ProcedureNode();
     void compile() override;
+    void preprocessing() override;
 };

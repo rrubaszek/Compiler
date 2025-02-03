@@ -14,7 +14,9 @@ public:
     ValueNode* right;
 
     ConditionNode() = default;
+    ~ConditionNode();
     void compile() override;
+    void preprocessing() override {};
 
 private:
     void compile_eq();

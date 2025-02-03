@@ -13,6 +13,7 @@ class Node {
 public:
     virtual ~Node() {}
     virtual void compile() = 0;
+    virtual void preprocessing() = 0;
 
     int lineno;
 };

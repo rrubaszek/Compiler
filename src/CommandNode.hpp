@@ -86,7 +86,9 @@ public:
     > data;
 
     CommandNode() = default;
+    ~CommandNode() = default;
     void compile() override;
+    void preprocessing() override;
 
 private:
     void compile_assign();

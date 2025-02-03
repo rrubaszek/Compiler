@@ -5,7 +5,9 @@
 class ArgsNode : public Node {
 public:
     ArgsNode() = default;
-    std::vector<std::string> args;
+    ~ArgsNode() = default;
+    void compile() override {};
+    void preprocessing() override {};
 
-    void compile() override;
+    std::vector<std::string> args;
 };

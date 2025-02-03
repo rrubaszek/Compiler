@@ -10,5 +10,7 @@ public:
     CommandsNode* commands;
 
     MainNode() = default;
+    ~MainNode();
     void compile() override;
+    void preprocessing() override;
 };

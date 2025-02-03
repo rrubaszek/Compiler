@@ -10,5 +10,7 @@ public:
     MainNode* main;
 
     ProgramNode() = default;
+    ~ProgramNode();
     void compile() override;
+    void preprocessing() override;
 };

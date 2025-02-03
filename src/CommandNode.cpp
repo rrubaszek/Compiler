@@ -4,6 +4,20 @@
 
 #include <limits>
 
+void CommandNode::preprocessing() {
+    if (type == PROC_CALL) {
+        auto& m_data = std::get<ProcCallData>(data);
+        auto proc = find_procedure(m_data.name);
+        auto current_proc = find_procedure(called_procedures.top());
+        
+        if (current_proc->name == proc->name) {
+            throw_error("niezdefiniowana procedura " + proc->name + ", linia: ", lineno);
+            return; // This prevents recursion
+        }
+        current_proc->procs_called_by.push_back(proc->name);
+    }
+}
+
 void CommandNode::compile() {
     switch (type) {
         case ASSIGN: compile_assign(); break;
@@ -343,15 +357,6 @@ void CommandNode::compile_proc_call() {
 
     if (proc == nullptr) {
         throw_error("niezadeklarowana procedura " + m_data.name + ", linia: ", lineno);
-    }
-
-    if (first_pass) {
-        auto current_proc = find_procedure(called_procedures.top());
-        if (current_proc->name == proc->name) {
-            throw_error("niezdefiniowana procedura " + proc->name + ", linia: ", lineno);
-            return; // This prevents recursion
-        }
-        current_proc->procs_called_by.push_back(proc->name);
     }
 
     int current_arg = 0;

@@ -15,5 +15,7 @@ public:
     std::string index_name;
 
     ValueNode() = default;
+    ~ValueNode() = default;
     void compile() override;
+    void preprocessing() override {};
 };

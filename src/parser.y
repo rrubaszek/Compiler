@@ -88,7 +88,15 @@ program_all :
             node->procedures = std::move(temporary_procedures);
 
         node->main = $2;
-        node->compile();
+
+        if (first_pass) {
+            node->preprocessing();
+        } 
+        else {
+            node->compile();
+        }
+
+        delete node;
     }
 ;
 
@@ -266,6 +274,7 @@ declarations :
     | pidentifier {
         DeclarationsNode* node = new DeclarationsNode();
         node->variables.push_back($1);
+        node->lineno = yylineno;
         $$ = node;
     }
     | pidentifier '[' number ':' number ']' { 
@@ -275,6 +284,7 @@ declarations :
         array.start = $3;
         array.end = $5;
         node->arrays.push_back(array);
+        node->lineno = yylineno;
         $$ = node;
     }
 ;

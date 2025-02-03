@@ -3,6 +3,11 @@
 
 #include <limits>
 
+ExpressionNode::~ExpressionNode() {
+    delete left;
+    delete right;
+}
+
 void ExpressionNode::compile()  {
     switch (type) {
         case VALUE: compile_value(); break;

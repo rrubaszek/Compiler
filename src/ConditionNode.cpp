@@ -1,6 +1,11 @@
 #include "ConditionNode.hpp"
 #include "instructions.hpp"
 
+ConditionNode::~ConditionNode() {
+    delete left;
+    delete right;
+}
+
 void ConditionNode::compile()  {
     switch (type) {
         case EQ: compile_eq(); break;

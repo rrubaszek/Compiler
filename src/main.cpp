@@ -45,8 +45,9 @@ void preprocessing() {
     is_local = false;
     next_free_register = 11;
     next_temp_free_register = 1;
-    program.clear();
-    global_symbol_table.clear();
+    yylineno = 1;
+    // program.clear();
+    // global_symbol_table.clear();
 }
 
 int main(int argc, char* argv[]) {
