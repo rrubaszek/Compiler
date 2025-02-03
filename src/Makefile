@@ -21,7 +21,7 @@ SRC_FILES = instructions.cpp CommandsNode.cpp CommandNode.cpp DeclarationsNode.c
 OBJ_FILES = $(SRC_FILES:.cpp=.o)
 
 # Output executable
-EXEC = compiler
+EXEC = kompilator
 
 # Rules
 all: $(EXEC)

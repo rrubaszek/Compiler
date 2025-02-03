@@ -26,7 +26,6 @@
 #include <unordered_map>
 
 extern FILE* yyin;
-extern int yyparse();
 
 void preprocessing() {
     first_pass = true;
@@ -51,8 +50,8 @@ void preprocessing() {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
+    if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " <input_file> <output_file>" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -68,7 +67,7 @@ int main(int argc, char* argv[]) {
     if (yyparse() == 0) {
         std::cout << "Parsing successful" << std::endl;
 
-        std::ofstream outfile("output.mr");
+        std::ofstream outfile(argv[2]);
         if (outfile.is_open()) {
             for (const auto& [command, value] : program) { // TODO: maybe check if can be improved/cleaned-up
                 outfile << command << " ";
@@ -79,7 +78,7 @@ int main(int argc, char* argv[]) {
         
             outfile << "HALT";
             outfile.close();
-            std::cout << "Parsing result saved to output.mr\n";
+            std::cout << "Parsing result saved to " << argv[2] << "\n";
         } 
         else {
             std::cerr << "Error: Could not open file for writing\n";
