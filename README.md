@@ -27,7 +27,7 @@ project-root/
 
 The .imp language is a procedural, imperative programming language. 
 ### Program Structure:
-- Every program in this language consists of a main program block and optional procedure declarations.
+Every program in this language consists of a main program block and optional procedure declarations.
 ```
 PROGRAM IS
     declarations
@@ -35,7 +35,7 @@ BEGIN
     commands
 END
 ```
-- Procedures
+Procedures
 ```
 PROCEDURE p(args) IS
     declarations
@@ -43,23 +43,26 @@ BEGIN
     commands
 END
 ```
-- All variables must be declared in the declarations section before they can be used. The declarations section appears before the BEGIN keyword in both the main program and procedures.
+All variables must be declared in the declarations section before they can be used. The declarations section appears before the BEGIN keyword in both the main program and procedures.
 
-- Arrays are declared using range notation: array_name[start:end]
+Arrays are declared using range notation
+```
+array_name[start:end]
+```
 
-- Commands
 The language supports the following commands:
-    - Assignment
+- Assignment
 ```
 identifier := expression;
 ```
-    - Conditional statements
+- Conditional statements
+
 ```
 IF condition THEN
     commands
 ENDIF
 ```
-Or with else branch:
+
 ```
 IF condition THEN
     commands
@@ -67,41 +70,38 @@ ELSE
     commands
 ENDIF
 ```
-    - Loops
-        - While loop:
+- Loops
 ```
 WHILE condition DO
     commands
 ENDWHILE
 ```
-        - Repeat-until loop:
+
 ```
 REPEAT
     commands
 UNTIL condition;
 ```
-        - For loop (ascending):
+
 ```
 FOR pidentifier FROM value TO value DO
     commands
 ENDFOR
 ```
-        - For loop (descending):
+
 ```
 FOR pidentifier FROM value DOWNTO value DO
     commands
 ENDFOR
 ```
-    - Procedure Calls
+- Procedure Calls
 ```
-proc_call;
+proc_call(args);
 ```
-    - Input/Output
-        - Read from input:
+- Input/Output operations
 ```
 READ identifier;
 ```
-        - Write to output:
 ```
 WRITE value;
 ```
