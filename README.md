@@ -43,19 +43,17 @@ BEGIN
     commands
 END
 ```
-- Variables and Declarations
-All variables must be declared in the declarations section before they can be used. The declarations section appears before the BEGIN keyword in both the main program and procedures.
+- All variables must be declared in the declarations section before they can be used. The declarations section appears before the BEGIN keyword in both the main program and procedures.
 
-- Arrays
-Arrays are declared using range notation: array_name[start:end]
+- Arrays are declared using range notation: array_name[start:end]
 
 - Commands
 The language supports the following commands:
-1. Assignment
+    - Assignment
 ```
 identifier := expression;
 ```
-2. Conditional statements
+    - Conditional statements
 ```
 IF condition THEN
     commands
@@ -69,48 +67,47 @@ ELSE
     commands
 ENDIF
 ```
-3. Loops
-3.1 While loop:
+    - Loops
+        - While loop:
 ```
 WHILE condition DO
     commands
 ENDWHILE
 ```
-3.2 Repeat-until loop:
+        - Repeat-until loop:
 ```
 REPEAT
     commands
 UNTIL condition;
 ```
-3.3 For loop (ascending):
+        - For loop (ascending):
 ```
 FOR pidentifier FROM value TO value DO
     commands
 ENDFOR
 ```
-3.4 For loop (descending):
+        - For loop (descending):
 ```
 FOR pidentifier FROM value DOWNTO value DO
     commands
 ENDFOR
 ```
-4. Procedure Calls
+    - Procedure Calls
 ```
 proc_call;
 ```
-5. Input/Output
-5.1 Read from input:
+    - Input/Output
+        - Read from input:
 ```
 READ identifier;
 ```
-5. 2Write to output:
+        - Write to output:
 ```
 WRITE value;
 ```
 ### Example program:
 ```
-PROCEDURE PrintArray IS
-    array[0:9]
+PROCEDURE PrintArray(T array) IS
     i
 BEGIN
     i := 0;
@@ -130,9 +127,7 @@ BEGIN
         i := i + 1;
     ENDWHILE
     
-    PrintArray;
-    
-    WRITE "Program completed.";
+    PrintArray(numbers);
 END
 ```
 
