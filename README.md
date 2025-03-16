@@ -164,7 +164,7 @@ This will generate the virtual machine executable.
 ```
 
 ## License
-*(Specify your license here, e.g., MIT, GPL, etc.)*
+This project is licensed under the MIT License.
 
 ## Contribution
 Feel free to contribute by submitting issues or pull requests!
