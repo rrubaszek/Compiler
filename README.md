@@ -155,12 +155,12 @@ This will generate the virtual machine executable.
 ## Usage
 ### Compiling a `.imp` File
 ```sh
-./compiler input.imp -o output.mr
+./kompilator input.imp output.mr
 ```
 
 ### Running a Compiled `.mr` File
 ```sh
-./virtual_machine output.mr
+./maszyna_wirtualna output.mr
 ```
 
 ## License
